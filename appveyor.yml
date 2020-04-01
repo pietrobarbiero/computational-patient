@@ -29,7 +29,7 @@ install:
 test_script:
   - mkdir for_test
   - cd for_test
-  - pytest -v --cov=template --pyargs template
+  - pytest -v --cov=pkpd --pyargs pkpd
 
 after_test:
   - cp .coverage %APPVEYOR_BUILD_FOLDER%

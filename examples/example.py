@@ -1,10 +1,9 @@
-import template
+import pkpd
 
 
 def main():
 
-    t = template.TemplateObject()
-    print(t)
+    pkpd.covid19_dkd_model()
 
     return
 

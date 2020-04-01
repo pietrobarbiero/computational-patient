@@ -3,10 +3,10 @@ import unittest
 
 class TestTemplateObject(unittest.TestCase):
     def test_object(self):
-        import template
+        import pkpd
 
-        t = template.TemplateObject()
-        self.assertTrue(isinstance(t, template.TemplateObject))
+        t = pkpd.TemplateObject()
+        self.assertTrue(isinstance(t, pkpd.TemplateObject))
         return
 
 

@@ -1,4 +1,4 @@
-name: project-template
+name: project-pkpd
 dependencies:
   - numpy
   - scipy

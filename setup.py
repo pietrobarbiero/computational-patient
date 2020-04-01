@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-"""A template."""
+"""A pkpd."""
 
 import codecs
 import os
@@ -7,12 +7,12 @@ import os
 from setuptools import find_packages, setup
 
 # get __version__ from _version.py
-ver_file = os.path.join('template', '_version.py')
+ver_file = os.path.join('pkpd', '_version.py')
 with open(ver_file) as f:
     exec(f.read())
 
-DISTNAME = 'project-template'
-DESCRIPTION = 'A template.'
+DISTNAME = 'project-pkpd'
+DESCRIPTION = 'A pkpd.'
 with codecs.open('README.rst', encoding='utf-8-sig') as f:
     LONG_DESCRIPTION = f.read()
 MAINTAINER = 'P. Barbiero'
