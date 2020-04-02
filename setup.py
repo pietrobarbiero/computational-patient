@@ -11,17 +11,17 @@ ver_file = os.path.join('pkpd', '_version.py')
 with open(ver_file) as f:
     exec(f.read())
 
-DISTNAME = 'project-pkpd'
-DESCRIPTION = 'A pkpd.'
+DISTNAME = 'pkpd-dkd-covid19'
+DESCRIPTION = 'A PK/PD model for diabetic kidney disease and SARS-CoV-2.'
 with codecs.open('README.rst', encoding='utf-8-sig') as f:
     LONG_DESCRIPTION = f.read()
 MAINTAINER = 'P. Barbiero'
 MAINTAINER_EMAIL = 'barbiero@tutanota.com'
 URL = 'https://github.com/pietrobarbiero/project-template'
 LICENSE = 'Apache 2.0'
-DOWNLOAD_URL = 'https://github.com/pietrobarbiero/project-template'
+DOWNLOAD_URL = 'https://github.com/pietrobarbiero/COVID19-DKD-PKPD'
 VERSION = __version__
-INSTALL_REQUIRES = ['numpy', 'scipy', 'scikit-learn', 'pandas']
+INSTALL_REQUIRES = ['numpy', 'scipy', 'matplotlib', 'seaborn']
 CLASSIFIERS = ['Intended Audience :: Science/Research',
                'Intended Audience :: Developers',
                'License :: OSI Approved',
