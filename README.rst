@@ -35,6 +35,28 @@ You can install the software along with all its dependencies from
     $ cd ./COVID19-DKD-PKPD
     $ pip install -r requirements.txt .
 
+After having installed all the requirements you can run
+the example script ``./example/example.py``.
+The results will be saved under the directory
+``./example/data/``.
+Once the results have been saved, you can make some plots
+by running the script ``./example/make_plots.py``.
+
+Contributing
+-------------
+
+The project (``./pkpd`` directory) has the following structure:
+
+- the ``pk`` directory is used to specify the equations of the Pharmacokinetic model
+- the ``pd`` directory is used to specify the equations of the Pharmacodynamic model
+- the ``ode`` directory is used to specify the ODE system
+
+The ``_config.py`` file is used to parse command line arguments.
+
+The script ``_covid19_dkd.py`` contains
+the main interface function to run the PK/PD model.
+
+
 Source
 ------
 
