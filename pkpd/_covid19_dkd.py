@@ -5,7 +5,7 @@ import scipy.io
 import numpy as np
 
 from ._config import load_configuration
-from .ode.local_RAS import combinedRAS_ACE_PKPD
+from .ode._local_RAS import combinedRAS_ACE_PKPD
 
 
 def call_combinedRAS_ACE_PKPD(args, params):

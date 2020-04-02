@@ -2,7 +2,7 @@ from scipy.integrate import solve_ivp
 
 import numpy as np
 
-from .model import ODE
+from ._model import ODE
 from ..pk import analytical_PK
 
 

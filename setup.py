@@ -11,8 +11,8 @@ ver_file = os.path.join('pkpd', '_version.py')
 with open(ver_file) as f:
     exec(f.read())
 
-DISTNAME = 'pkpd-dkd-covid19'
-DESCRIPTION = 'A PK/PD model for diabetic kidney disease and SARS-CoV-2.'
+DISTNAME = 'covid19-pkpd-dkd'
+DESCRIPTION = 'PK/PD model for COVID19 patients with diabetic kidney disease.'
 with codecs.open('README.rst', encoding='utf-8-sig') as f:
     LONG_DESCRIPTION = f.read()
 MAINTAINER = 'P. Barbiero'

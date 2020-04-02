@@ -1,5 +1,5 @@
-PK/PD Model for Diabetic kidney disease and SARS-CoV-2
-=======================================================
+PK/PD model for COVID19 patients with diabetic kidney disease
+=============================================================
 
 A mathematical model of glucose-stimulated local
 renin-angiotensin system (RAS) in podocytes [1][2][3] combined
