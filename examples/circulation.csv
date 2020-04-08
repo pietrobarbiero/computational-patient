@@ -1,0 +1,76 @@
+﻿,value,unit,description
+Ts1v,0.34999999999999998,sec,Scaler to set ventricular systolic fraction of heart cycle
+Ts1a,0.20000000000000001,sec,Scaler to set atrial systolic fraction of heart cycle
+Ts2,1,hz,Unit balance scalar for Tsa and Tsv functions
+offv,0.026249999999999999,sec,Parameter to match model and measured end-diastolic ABP
+Vlvd0,71.816243458000002,ml,Unstressed end-diastolic left ventricle volume
+Vlvs0,23.699360299999999,ml,Unstressed end-systolic left ventricle volume
+Vrvd0,102.88149350649999,ml,Unstressed end-diastolic right ventricle volume
+Vrvs0,53.4983766,ml,Unstressed end-systolic right ventricle volume
+Vlad0,70,ml,Unstressed end-diastolic left atrium volume
+Vlas0,40,ml,Unstressed end-systolic left atrium volume
+Vrad0,60,ml,Unstressed end-diastolic right atrium volume
+Vras0,53,ml,Unstressed end-systolic right atrium volume
+Rra,0.001,mmHg*s*ml^-1,Tricuspid valve resistance
+Rla,0.001,mmHg*s*ml^-2,Mitral valve resistance
+Rlv,0.0001,mmHg*s*ml^-3,Aortic valve resistance
+Rrv,0.0001,mmHg*s*ml^-4,Pulmonary valve resistance
+PRint,0.12,sec,"Difference in atrial, venticular activation times"
+KElv,1,,Scaling factor for maximum left ventricular elastance
+KErv,1,,Scaling factor for maximum right ventricular elastance
+Emaxlv1,5.4000000000000004,mmHg/ml,Maximum elastance of first left ventricle component
+Eminlv,0.092603894399999997,mmHg/ml,Minimum elastance of first left ventricle component
+Emaxrv1,0.53000000000000003,mmHg/ml,Maximum elastance of first right ventricle component
+Eminrv,0.034309648300000002,mmHg/ml,Minimum elastance of first right ventricle component
+EDVLV,125.9934095755,ml
+EDVRV,175.8658008658,ml
+Emaxra,0.13,mmHg/ml,Maximum elastance right ventricle
+Eminra,0.085000000000000006,mmHg/ml,Minimum elastance left ventricle
+Emaxla,0.29999999999999999,mmHg/ml,Maximum elastance right ventricle
+Eminla,0.18528328569999999,mmHg/ml,Minimum elastance left ventricle
+KCOMAP,3,L/mmHg/min^2
+Raop,0.0001,mmHg*sec*ml^(-1),Proximal aortic resistance
+Rtaop,0.02,mmHg*sec*ml^(-1),Transmural proximal aortic resistance
+Rcrb,6.8284472205000002,mmHg*sec*ml^(-1),Cerebral circulation resistance
+Raod,0.012999999999999999,mmHg*sec*ml^(-1),Distal aortic resistance
+Rtaod,1,mmHg*sec*ml^(-1),Transmural distal aortic resistance
+Rsap,0.0030000000000000001,mmHg*sec*ml^(-1),Systemic arteriolar resistance
+Rsc,0.15450549450000001,mmHg*sec*ml^(-1),Systemic capillaries resistance
+Rsv,0.13812982269999999,mmHg*sec*ml^(-1),Systemic veins resistance
+Caop,0.26305264109999998,ml*mmHg^(-1),Aortic proximal compliance
+Caod,0.63865973190000003,ml*mmHg^(-1),Aortic distal compliance
+Csap,1.4815497647,ml*mmHg^(-1),Systemic arterioles compliance
+Csc,5.7668853549000003,ml*mmHg^(-1),Systemic capillaries compliance
+Vaop0,9.5201273326999996,ml,Proximal aorta unstressed volume
+Vaod0,23.1111565844,ml,Distal aorta unstressed volume
+Vsap0,52.939497565099998,ml,Systemic arteries unstressed volume
+Vsc0,71.024155524600005,ml,Systemic capillaries unstressed volume
+Laop,1.0000000000000001e-05,mmHg*sec^2*ml^(-1),Proximal aorta intertance
+Laod,2.0000000000000002e-05,mmHg*sec^2*ml^(-1),Distal aorta inertance
+Kc,497.78524503670002,mmHg,Active vasomotor tone scaling parameter for systemic arterial pressure
+Do,50,ml,Active vasomotor tone volume parameter for systemic arterial pressure
+Vsa0,485.76249318909998,ml,Minimal volume of systemic arteries
+Vsa_max,577.71060001080002,ml,Maximal luminal volume of systemic arteries
+Kp1,0.029999999999999999,mmHg,Passive vasomotor tone scaling parameter for systemic arterial pressure
+Kp2,0.050000000000000003,mmHg*ml^(-2),Passive vasomotor tone scaling parameter for systemic arterial pressure
+Kr,0.01,mmHg*sec*ml^(-1),Pressure scaling constant for systemic arterial resistance
+Rsa0,0.58063914999999999,mmHg*sec/ml,Offset parameter for systemic arteriolar resistance
+tau_p,0.10000000000000001,ml^(-1),Passive vasomotor tone constant for systemic arterial pressure
+Ksv,0.73999999999999999,,Scaling factor used to optimize systemic venous pressure-volume relationship
+Kv1,30.212393331000001,mmHg,Scaling factor for systemic venous pressure
+Vmax_sv,3379.5450000637002,ml,Maximal volume of lumped systemic veins
+D2,-5,mmHg,Offsetting constant for partially collapsed Vena cava pressure
+K1,0.045999694000000001,mmHg*ml^(-1),Scaling factor for Vena cava PV relationship
+K2,0.37419550600000001,mmHg,Scaling factor for partially collapsed Vena cava pressure
+KR,0.001,mmHg*sec*ml^(-1),Scaling factor for Vena cava resistance
+R0,0.025000000000000001,mmHg*sec*ml^(-1),Vena cava resistance offset parameter
+Vvc0,129.6486000024,ml,Unstressed volume of Vena cava
+Vmax_vc,350.53140000650001,ml,Maximum volume of Vena cava
+Vmin_vc,50.010747000899997,ml,Minimum volume of Vena cava
+tauCO,15,sec,Cardiac output equation time constant
+Kxp,2,mmHg,P-V curve shaping parameter
+Kxv,8,ml,P-V curve shaping parameter
+Kxv1,1,ml,P-V curve shaping parameter
+Kxp1,1,mmHg,P-V curve shaping parameter
+tauMAP,2,sec,Time constant for mean arterial pressure ODE
+tauABP,0.001,sec,Time constant for ABP follower
