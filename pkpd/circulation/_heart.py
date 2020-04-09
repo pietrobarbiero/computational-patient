@@ -1,5 +1,7 @@
 import numpy as np
 
+from ._common import _psi
+
 
 def _yi(t_rel, Ts):
     """
@@ -102,18 +104,6 @@ def _trigger_B(t, tHB, HP, offv, Ts1v, Ts2, n,
 
 
 # Equation 18 is an identity
-
-
-def _psi(V, Kxp, Kxv):
-    """
-    Psi
-
-    :param V:
-    :param Kxp:
-    :param Kxv:
-    :return:
-    """
-    return Kxp * (1 / (np.exp((V) / Kxv) - 1))
 
 
 def _pv(Ev, Vv, Vv0, af_con2, Kxp, Kxv):
