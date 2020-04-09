@@ -178,7 +178,7 @@ def _psa_p(Kp1, Kp2, tau_p, Vsa, Vsa0):
     :param Vsa0:
     :return:
     """
-    return Kp1 * np.exp(tau_p * (Vsa - Vsa0)) + Kp2 * (Vsa - Vsa0)**2
+    return Kp1 * np.exp(tau_p * (Vsa - Vsa0)) + Kp2 * (Vsa - Vsa0) ** 2
 
 
 def _psa(f_vaso, Psa_a, Psa_p):
@@ -205,7 +205,7 @@ def _psc(Vsc, Vsc0, Csc, Kxp, Kxv):
     :return:
     """
     psi = _psi(Vsc, Kxp, Kxv)
-    return (Vsc-Vsc0)/Csc - psi
+    return (Vsc - Vsc0) / Csc - psi
 
 
 def _psv(Kv, Vmax_sv, Vsv):
@@ -223,10 +223,10 @@ def _psv(Kv, Vmax_sv, Vsv):
 def _pvc(Vvc, Vvc0, Vmin_vc, K1, K2, D2, Kxp, Kxv):
     psi = _psi(Vvc, Kxp, Kxv)
     if Vvc > Vvc0:
-        return K1*(Vvc-Vvc0) - psi
+        return K1 * (Vvc - Vvc0) - psi
 
     else:
-        return D2+K2*np.exp(Vvc/Vmin_vc) - psi
+        return D2 + K2 * np.exp(Vvc / Vmin_vc) - psi
 
 
 #####################################
@@ -263,7 +263,7 @@ def _vaop_change(Paop, Vaop, Vaop0, Caop, Rtaop):
     :param Rtaop:
     :return:
     """
-    return (Paop - ((Vaop-Vaop0)/Caop))/Rtaop
+    return (Paop - ((Vaop - Vaop0) / Caop)) / Rtaop
 
 
 def _v_change(Vpos, Vneg):
@@ -287,7 +287,7 @@ def _mapmeas_change(ABPshift, MAPmeas, tauMAP):
     :param tauMAP:
     :return:
     """
-    return (ABPshift-MAPmeas)/tauMAP
+    return (ABPshift - MAPmeas) / tauMAP
 
 
 def _comea_change(PAFmeas, COmea, tauCO):
@@ -298,8 +298,12 @@ def _comea_change(PAFmeas, COmea, tauCO):
     :param tauCO:
     :return:
     """
-    return (PAFmeas-COmea)/tauCO
+    return (PAFmeas - COmea) / tauCO
 
+
+##################################
+# Nonlinear systemic resistances #
+##################################
 
 def _rsa(Kr, f_vaso, Vsa, Vsa_max, Rsa0):
     """
@@ -311,7 +315,7 @@ def _rsa(Kr, f_vaso, Vsa, Vsa_max, Rsa0):
     :param Rsa0:
     :return:
     """
-    return (Kr*np.exp(4*f_vaso)) + (Kr*(Vsa_max/Vsa)^2) + Rsa0
+    return (Kr * np.exp(4 * f_vaso)) + (Kr * (Vsa_max / Vsa) ** 2) + Rsa0
 
 
 def _rvc(KR, Vmax_vc, Vvc, R0):
@@ -324,15 +328,15 @@ def _rvc(KR, Vmax_vc, Vvc, R0):
     :param R0:
     :return:
     """
-    return (KR * (Vmax_vc / Vvc) ^ 2) + R0
+    return (KR * (Vmax_vc / Vvc) ** 2) + R0
 
 
 def _equations(t, HR, PAFmeas, ABPmeas,
-                Rsa, Rvc,
+               Rsa, Rvc,
                Paop, Paod, Psa_a, Psa_p, Psa, Psap, Psc, Psv, Pvc,
                Faop, Faod, Fsa, Fsap, Fsc, Fsv, Fvc, Fcrb,
                Vaop, Vaod, Vsa, Vsap, Vsc, Vsv, Vvc,
-                Kv, AOFmod,
+               Kv, AOFmod,
                ABPshift, ABPfol, MAPmeas, MAPmod, COmea,
                # heart
                Frv, Frv_sm, Flv, Pra,
@@ -341,21 +345,20 @@ def _equations(t, HR, PAFmeas, ABPmeas,
                # parameters
                KCOMAP, tauC0, offv,
                Raop, Rtaop, Rtaod, Rcrb, Rsap, Raod, Rsc, Rsv,
-                Caop, Caod, Csap, Csc,
-                Vaop0, Vaod0, Vsap0, Vsc0,
-                Laop, Laod,
-                Kc, Do, Vsa0, Vsa_max,
+               Caop, Caod, Csap, Csc,
+               Vaop0, Vaod0, Vsap0, Vsc0,
+               Laop, Laod,
+               Kc, Do, Vsa0, Vsa_max,
                Kp1, Kp2, Kr, Rsa0, tau_p, Ksv, Kv1,
                Vmax_sv, D2, K1, K2, KR, R0,
                Vvc0, Vmax_vc, Vmin_vc, tauCO,
                Kxp, Kxv, Kxv1, Kxp1,
                tauMAP, tauABP,
                # coronary
-                Ccorepi,
+               Ccorepi,
                # baroreceptor
                f_vaso,
                ):
-
     # misc
     COmod = _cardiac_output(Frv_sm)
     SV = _stroke_volume(COmod, HR)
@@ -393,8 +396,8 @@ def _equations(t, HR, PAFmeas, ABPmeas,
     d_Vsv_dt = _v_change(Fsc, Fsv)
     d_Vvc_dt = _v_change(Fsv + Fcrb, Fvc)
     d_Frv_sm_dt = _pulmonary_valve_flow_change(Frv, Frv_sm, tauC0)
-    d_Faop_dt = _forward_flow(Paop, Faop*Raop + Paod, Laop)
-    d_Faod_dt = _forward_flow(MAPmod, Faod*Raod - Psap, Laod)
+    d_Faop_dt = _forward_flow(Paop, Faop * Raop + Paod, Laop)
+    d_Faod_dt = _forward_flow(MAPmod, Faod * Raod - Psap, Laod)
     d_Paop_dt = _pressure_aop_change(Flv, d_Vaop_dt, Faop, Fcorepi, Ccorepi)
 
     return d_ABPfol_dt, d_AOFmod_dt, d_Vaop_dt, d_Vaod_dt, \
