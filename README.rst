@@ -36,11 +36,11 @@ You can install the software along with all its dependencies from
     $ pip install -r requirements.txt .
 
 After having installed all the requirements you can run
-the example script ``./example/example.py``.
+the example script ``./examples/example.py``.
 The results will be saved under the directory
-``./example/data/``.
+``./examples/data/``.
 Once the results have been saved, you can make some plots
-by running the script ``./example/make_plots.py``.
+by running the script ``./examples/make_plots.py``.
 
 Contributing
 -------------

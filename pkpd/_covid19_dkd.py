@@ -3,8 +3,10 @@ import pickle
 
 import scipy.io
 import numpy as np
+import pandas as pd
 
 from ._config import load_configuration
+from .circulation._model import call_cardio
 from .ode._local_RAS import combinedRAS_ACE_PKPD
 
 
@@ -65,13 +67,13 @@ def call_combinedRAS_ACE_PKPD(args, params):
                                     args.glu)
 
     t, diacid_conc, AngII_conc, AngI_conc, \
-        Inhibition, Renin_conc, drug_conc, AGT_conc = solution
+    Inhibition, Renin_conc, drug_conc, AGT_conc = solution
 
     ANGII_Plot = 0.021001998652419
     # y_angII = ((AngII_conc / (pk_params["Mw_AngII"][0][0] * 10**6/1000)) / ANGII_Plot) * 100
-    y_angII_norm = ((AngII_conc / (pk_params["Mw_AngII"][0][0] * 10**6)) / ANGII_Plot) * 100
+    y_angII_norm = ((AngII_conc / (pk_params["Mw_AngII"][0][0] * 10 ** 6)) / ANGII_Plot) * 100
     tplot = t / 24
-    y_angII = AngII_conc/(pk_params["Mw_AngII"][0][0] * 10**6/1000)
+    y_angII = AngII_conc / (pk_params["Mw_AngII"][0][0] * 10 ** 6 / 1000)
 
     save_var = {
         "params": args,
@@ -92,15 +94,19 @@ def call_combinedRAS_ACE_PKPD(args, params):
 
     return
 
-
 def covid19_dkd_model():
     args = load_configuration()
-    args.renal_function = args.renal_function[0]
+    params = pd.read_csv('circulation.csv', index_col=0, squeeze=True)
 
-    # load parameters
-    params_file = "".join(["params_", args.drug_name, args.renal_function, ".mat"])
-    params = scipy.io.loadmat(params_file)
+    call_cardio(args, params)
 
-    call_combinedRAS_ACE_PKPD(args, params)
+    # args = load_configuration()
+    # args.renal_function = args.renal_function[0]
+    #
+    # # load parameters
+    # params_file = "".join(["params_", args.drug_name, args.renal_function, ".mat"])
+    # params = scipy.io.loadmat(params_file)
+    #
+    # call_combinedRAS_ACE_PKPD(args, params)
 
     return

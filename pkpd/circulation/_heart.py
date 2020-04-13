@@ -100,7 +100,7 @@ def _trigger_B(t, tHB, HP, offv, Ts1v, Ts2, n,
 
         af_con2 = af_con
 
-        return HRv, Tsv, tRwave, Vvarlvs0, Vvarrvs0, af_con2
+        return HRv, Tsv, tRwave, Vvarlvs0, Vvarrvs0, af_con2, m
 
 
 # Equation 18 is an identity

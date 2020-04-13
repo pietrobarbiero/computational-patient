@@ -1,9 +1,7 @@
 import numpy as np
 
 
-def _firing_frequency(d_Nbr_dt, d_ABPfol_dt,
-                      Nbr_t, Nbr, ABPshift,
-                      a, a1, a2, K):
+def _firing_frequency(d_ABPfol_dt, Nbr_t, Nbr, ABPshift, a, a1, a2, K):
     """
     Equation A.93
 
@@ -18,11 +16,10 @@ def _firing_frequency(d_Nbr_dt, d_ABPfol_dt,
     :param K:
     :return:
     """
-    return (a2 * a * d_Nbr_dt) + ((a2 + a) * Nbr_t) + Nbr - \
-           (K*ABPshift) - (a1 * K * d_ABPfol_dt)
+    return 1/(a2 * a) * (-((a2 + a) * Nbr_t) - Nbr + (K*ABPshift) + (a1 * K * d_ABPfol_dt))
 
 
-def _n_change(t, tmin, l, N, K, Nbr, T):
+def _n_change(t, tmin, l, N, K, Nbr_list, time_list, T):
     """
     Equations A.94 and A.95
 
@@ -36,7 +33,9 @@ def _n_change(t, tmin, l, N, K, Nbr, T):
     :return:
     """
     if t - tmin > l:
-        return (-N + (K * Nbr(t - l))) / T
+        # TODO: double check this arrangement
+        Nbr = Nbr_list[np.argmin(np.abs(time_list - (t - l)))]
+        return (-N + (K * Nbr)) / T
 
     return 0
 

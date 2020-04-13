@@ -74,3 +74,56 @@ Kxv1,1,ml,P-V curve shaping parameter
 Kxp1,1,mmHg,P-V curve shaping parameter
 tauMAP,2,sec,Time constant for mean arterial pressure ODE
 tauABP,0.001,sec,Time constant for ABP follower
+Rtpap,0.10000000000000001,mmHg*sec*ml^(-1),Proximal pulmonary arterial transmural resistance
+Rtpad,0.20000000000000001,mmHg*sec*ml^(-1),Distal pulmonary arterial transmural resistance
+Rpap,0.0001,mmHg*sec*ml^(-1),Proximal pulmonary resistance
+Rpad,0.029999999999999999,mmHg*sec*ml^(-1),Distal proximal pulmonary resistance
+Rps,4.3334615384999999,mmHg*sec*ml^(-1),Pulmonary shunt resistance
+Rpa,0.056514913700000002,mmHg*sec*ml^(-1),Pulmonary arterioles resistance
+Rpc,0.0319230769,mmHg*sec*ml^(-1),Pulmonary capillaries resistance
+Rpv,0.0001,mmHg*sec*ml^(-1),Pulmonary veins resistance
+Cpap,1.4457990448,ml*mmHg^(-1),Proximal pulmonary arterial compliance
+Cpad,2.5308186217999999,ml*mmHg^(-1),Distal pulmonary arterial compliance
+Cpa,3.1020103246000001,ml*mmHg^(-1),Pulmonary arterioles compliance
+Cpc,9.1168185168000004,ml*mmHg^(-1),Pulmonary capillaries compliance
+Cpv,52.267449860299998,ml*mmHg^(-1),Pulmonary veins compliance
+Vpap0,9.8089013876000006,ml,Proximal pulmonary artery unstressed volume
+Vpad0,17.159592650299999,ml,Distal pulmonary artery unstressed volume
+Vpa0,17.159592650299999,ml,Small pulmonary arteries unstressed volume
+Vpc0,29.4187244588,ml,Pulmonary capillaries unstressed volume
+Vpv0,29.596519963199999,ml,Pulmonary veins unstressed volume
+Lpap,0.00018019069999999999,mmHg*sec^2*ml^(-1),Proximal arterial inertance
+Lpad,0.0001932239,mmHg*sec^2*ml^(-1),Distal pulmonary artery inertance
+Rcorepi,5.2847346153999997,s*ml^-1*mmHg,Proximal epicardial arteries resistance
+Rcorintra,10.1466904615,s*ml^-1*mmHg,Distal epicardial arteries resistance
+Rcorcap,4.2277876922999997,s*ml^-1*mmHg,Coronary capillaries resistance
+Rcorvn,1.4797256923,s*ml^-1*mmHg,Small coronary veins resistance
+Ccorepi,0.074200628300000002,ml/mmHg,Compliance of proximal epicardial arteries
+Ccorintra,0.13388810840000001,ml/mmHg,Compliance of distal epicardial arteries
+Ccorcap,0.93920432269999998,ml/mmHg,Compliance of coronary capillaries
+Ccorvn,2.4461317743,ml/mmHg,Compliance of small coronary veins
+Vcorepi0,2.6853918941999999,ml,Epicardial arteries unstressed volume
+Vcorintra0,2.6853918941999999,ml,Intramyocardial arteries unstressed volume
+Vcorcap0,2.5226556222999998,ml,Coronary capillaries unstressed volume
+Vcorvn0,2.4934965985000002,ml,Coronary veins unstressed volume
+a,0.001,sec,Time constant for baroreceptor firing rate
+a1,0.035999999999999997,sec,Time constant for baroreceptor firing rate
+a2,0.0018,sec,Time constant for baroreceptor firing rate
+K,0.99142456000000001,sec^(-1)*mmHg^(-1),Baroreceptor gain (used to account for units)
+K_con,1,,CNS gain for contractility control
+T_con,10,sec,CNS time parameter for contractility control
+l_con,3,sec,CNS time delay for contractility control
+a_con,0.29999999999999999,,Time constant for efferent contractility firing
+b_con,0.69999999999999996,,Time constant for efferent sympathetic contractility firing
+tau_con,0.040000000000000001,sec,Time parameter for efferent sympathetic contractility firing
+No_con,110,sec^(-1),Frequency parameter for efferent sympathetic contractility firing
+K_vaso,1,,CNS gain for vasomotor tone control
+T_vaso,6,sec,CNS time parameter for vasomotor tone control
+l_vaso,3,sec,CNS time delay for vasomotor tone control
+a_vaso,-0.46628593000000002,,Time constant for efferent vasomotor tone firing
+tau_vaso,0.040000000000000001,sec,Time parameter for efferent vasomotor tone firing
+No_vaso,110,sec^(-1),Frequency parameter for efferent vasomotor tone firing
+amin,-2.8064072800000002,,Contractility control offset
+bmin,0.69999999999999996,,Contractility control offset
+Ka,5,,Contractility control scaling factor
+Kb,0.5,,Contractility control scaling factor

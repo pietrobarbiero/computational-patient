@@ -4,36 +4,22 @@ import numpy as np
 from scipy.integrate import solve_ivp
 import pandas as pd
 
+from ._baroreceptor import _f, _b_vaso, _firing_frequency, _n_change
 from ._blood import _total_blood_volume, _heart_volume, _coronary_volume, _systemic_arterial_volume, \
     _systemic_venous_volume, _pulmonary_arterial_volume
 from ._coronary import _p_eq, _pcor, _pcorc, _fcor, _vcor
-from ._heart import _trigger_A, _trigger_B, t_rel, _yi, _ei, _v0, _pa, _fi, _volume_change, _pv
+from ._heart import _trigger_A, _trigger_B, t_rel, _yi, _ei, _v0, _pa, _fi, _volume_change, _pv, _emaxv
 from ._pulmonary import _ppap, _ppad, _pp, _fp, _vp, _fpa
 from ._systemic import _cardiac_output, _stroke_volume, _arterial_blood_pressure, _kv, _map, _aortic_afterload, _psap, \
     _psa_a, _psa_p, _psa, _psc, _psv, _pvc, _forward_flow, _abp_change, _aortic_flow_change, _vaop_change, _v_change, \
-    _pulmonary_valve_flow_change, _pressure_aop_change
+    _pulmonary_valve_flow_change, _pressure_aop_change, _rsa, _rvc, _mapmeas_change, _comea_change
 
 
 def ODE(t, y,
 
-        x, tHB, HP, tmeas, ABPmeas,
-
-        # parameters
-        tauC0, Emaxlv, Vvarlvs0, Vvarrvs0,
+        x, tHB, HP, tmeas, ABPmeas, PAFmeas, Nbr_list, Nbr_list_idx,
 
         # heart
-        # ta_rel, tv_rel, Tsv, Tsa, n, m, HR, HRa, HRv, tRwave, tPwave, Vvarlvs0, Vvarrvs0,
-        # yv, ya,
-        # Elv, Erv, Era, Ela,
-        # Emaxlv, Emaxrv,
-        # Vlv0, Vrv0, Vla0, Vra0,
-        # Fra, Frv, Fla, Flv,
-        # Pra, Prv, Pla, Plv,
-        # Vra, Vrv, Vla, Vlv,
-        # Frv_sm, COmod, SV,
-        # initial conditions
-        HRa, HRv, Vra, Vrv, Vla, Vlv, Tsv, Tsa, n, m, tRwave, tPwave,
-        # parameters
         Ts1v, Ts1a, Ts2, offv,
         Vlvd0, Vlvs0, Vrvd0, Vrvs0, Vlad0, Vlas0, Vrad0, Vras0,
         Rra, Rla, Rlv, Rrv,
@@ -43,16 +29,6 @@ def ODE(t, y,
         Emaxra, Eminra, Emaxla, Eminla,
 
         # systemic
-        # Rsa, Rvc,
-        # Paop, Paod, Psa_a, Psa_p, Psa, Psap, Psc, Psv, Pvc,
-        # Faop, Faod, Fsa, Fsap, Fsc, Fsv, Fvc, Fcrb,
-        # Vaop, Vaod, Vsa, Vsap, Vsc, Vsv, Vvc,
-        # Kv, AOFmod,
-        # ABPshift, ABPfol, MAPmeas,
-        # MAPmod, COmea,
-        # initial conditions
-        MAPmeas0, Faop, Faod, Frv_sm, Vaop, Vaod, Vsa, Vsap, Vsc, Vsv, Vvc, Paop, AOFmod, ABPfol, COmea,
-        # parameters
         KCOMAP, Raop, Rtaop, Rcrb, Raod, Rtaod, Rsap, Rsc, Rsv,
         Caop, Caod, Csap, Csc,
         Vaop0, Vaod0, Vsap0, Vsc0,
@@ -61,41 +37,22 @@ def ODE(t, y,
         tauCO, Kxp, Kxv, Kxv1, Kxp1, tauMAP, tauABP,
 
         # pulmonary
-        # Ppap, Ppad, Ppa, Ppc, Ppv,
-        # Vpap, Vpad, Vpa, Vpc, Vpv,
-        # Fpap, Fpad, Fps, Fpa, Fpc, Fpv,
-        # initial conditions
-        Vpap, Vpad, Vpa, Vpc, Vpv, Fpap, Fpad,
-        # parameters
         Rtpap, Rtpad, Rpap, Rpad, Rps, Rpa, Rpc, Rpv,
         Cpap, Cpad, Cpa, Cpc, Cpv,
         Vpap0, Vpad0, Vpa0, Vpc0, Vpv0,
         Lpap, Lpad,
 
         # coronary
-        # Pcorintrac, Pcorcapc, Pcorvnc,
-        # Pcorepi, Pcorintra, Pcorcap, Pcorvn,
-        # Vcorepi, Vcorintra, Vcorcap, Vcorvn, Vcorcirc,
-        # Fcorepi, Fcorintra, Fcorcap, Fcorvn,
-        # initial conditions
-        Vcorepi, Vcorintra, Vcorcap, Vcorvn,
-        # parameters
         Rcorepi, Rcorintra, Rcorcap, Rcorvn,
         Ccorepi, Ccorintra, Ccorcap, Ccorvn,
         Vcorepi0, Vcorintra0, Vcorcap0, Vcorvn0,
 
         # baroreceptor
-        # Nbr, Nbr_t, N_con, f_con, N_vaso, f_vaso, b_vaso, af_con, af_con2,
-        # initial conditions
-        Nbr, Nbr_t, N_con, N_vaso, af_con2,
-        # parameters
         a, a1, a2, K,
         K_con, T_con, l_con, a_con, b_con, tau_con, No_con,
         K_vaso, T_vaso, l_vaso, a_vaso, tau_vaso, No_vaso,
-        amin, bmin, Ka, Kb,
-
-        # blood
-        Vheart, VSysArt, VSysVen, VPulArt):
+        amin, bmin, Ka, Kb
+        ):
 
     HRa, HRv, Vra, Vrv, Vla, Vlv, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave,\
     MAPmeas, Faop, Faod, Frv_sm, Vaop, Vaod, Vsa, Vsap, Vsc, Vsv, Vvc, Paop, AOFmod, ABPfol, COmea,\
@@ -103,20 +60,29 @@ def ODE(t, y,
     Vcorepi, Vcorintra, Vcorcap, Vcorvn,\
     Nbr, Nbr_t, N_con, N_vaso, af_con2 = y
 
+    n = int(n)
+    m = int(m)
+
     f_con = a_con + b_con / (np.exp(tau_con * (N_con - No_con)) + 1.0)
     af_con = amin + (Ka * f_con)
 
     # heart
-    resultA = _trigger_A(t, tHB, HP, PRint, offv, Ts1a, Ts2)
+    resultA = _trigger_A(t, tHB[n+1], HP[n+1], PRint, offv, Ts1a, Ts2)
     if resultA is not None:
         HRa, Tsa, tPwave = resultA
+        n = n + 1
 
-    resultB = _trigger_B(t, tHB, HP, offv, Ts1v, Ts2, n,
+    resultB = _trigger_B(t, tHB[m+1], HP[m+1], offv, Ts1v, Ts2, n,
                          Vlv, Vlvd0, EDVLV, Vlvs0,
                          Vrv, Vrvd0, EDVRV, Vrvs0,
                          af_con)
     if resultB is not None:
-        HRv, Tsv, tRwave, Vvarlvs0, Vvarrvs0, af_con2 = resultB
+        HRv, Tsv, tRwave, Vvarlvs0, Vvarrvs0, af_con2, m = resultB
+
+    HR = HRv
+
+    Emaxlv = _emaxv(KElv, Emaxlv1)
+    Emaxrv = _emaxv(KErv, Emaxrv1)
 
     # ----------- heart ----------- #
     ta_rel = t_rel(t, tPwave)
@@ -126,7 +92,7 @@ def ODE(t, y,
     yv = _yi(tv_rel, Tsv)
     # elastances
     Era = _ei(Emaxra, Eminra, ya)
-    Erv = _ei(Emaxra, Eminra, yv)
+    Erv = _ei(Emaxrv, Eminrv, yv)
     Ela = _ei(Emaxla, Eminla, ya)
     Elv = _ei(Emaxlv, Eminlv, yv)
     # unstressed volumes
@@ -139,6 +105,8 @@ def ODE(t, y,
     Prv = _pv(Erv, Vrv, Vrv0, af_con2, Kxp, Kxv)
     Pla = _pa(Ela, Vla, Vla0, Kxp, Kxv)
     Plv = _pv(Elv, Vlv, Vlv0, af_con2, Kxp, Kxv)
+
+    Ppap = _ppap(Prv, Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv)
     # flows
     Fra = _fi(Pra, Prv, Rra)
     Frv = _fi(Prv, Ppap, Rrv)
@@ -146,14 +114,21 @@ def ODE(t, y,
     Flv = _fi(Plv, Paop, Rlv)
 
     # ----------- systemic circulation ----------- #
+    Pvc = _pvc(Vvc, Vvc0, Vmin_vc, K1, K2, D2, Kxp, Kxv)
     # misc
     COmod = _cardiac_output(Frv_sm)
     SV = _stroke_volume(COmod, HR)
-    ABPshift = _arterial_blood_pressure(ABPmeas, t, offv)
+
+    # TODO: check this arrangement
+    i = np.argmin(np.abs(tmeas - (t + offv)))
+    ABPshift = ABPmeas[i]
+
     Kv = _kv(Kv1, Ksv)
     MAPmod = _map(Rtaod, Rcrb, AOFmod, Faod,
                   Vaod, Vaod0, Caod, Kxp, Kxv, Pvc)
 
+    b_vaso = _b_vaso(a_vaso)
+    f_vaso = _f(a_vaso, b_vaso, tau_vaso, N_vaso, No_vaso)
     # pressures
     Paod = _aortic_afterload(ABPshift)
     Psap = _psap(Vsap, Vsap0, Csap, Kxp, Kxv)
@@ -162,7 +137,10 @@ def ODE(t, y,
     Psa = _psa(f_vaso, Psa_a, Psa_p)
     Psc = _psc(Vsc, Vsc0, Csc, Kxp, Kxv)
     Psv = _psv(Kv, Vmax_sv, Vsv)
-    Pvc = _pvc(Vvc, Vvc0, Vmin_vc, K1, K2, D2, Kxp, Kxv)
+    # Pvc = _pvc(Vvc, Vvc0, Vmin_vc, K1, K2, D2, Kxp, Kxv)
+
+    Rsa = _rsa(Kr, f_vaso, Vsa, Vsa_max, Rsa0)
+    Rvc = _rvc(KR, Vmax_vc, Vvc, R0)
 
     # flows
     Fcrb = _forward_flow(MAPmod, Pvc, Rcrb)
@@ -172,6 +150,10 @@ def ODE(t, y,
     Fsv = _forward_flow(Psv, Pvc, Rsv)
     Fvc = _forward_flow(Pvc, Pra, Rvc)
 
+    Pcorepi = _p_eq(Paop)
+    Pcorintra = _pcor(Vcorintra, Vcorintra0, Ccorintra, Kxp1, Kxv1)
+    Pcorintrac = _pcorc(Pcorintra, Plv)
+    Fcorepi = _fcor(Pcorepi, Pcorintrac, Rcorepi)
     # differential equations
     d_ABPfol_dt = _abp_change(ABPshift, ABPfol, tauABP)
     d_AOFmod_dt = _aortic_flow_change(MAPmeas, MAPmod, KCOMAP)
@@ -182,14 +164,13 @@ def ODE(t, y,
     d_Vsc_dt = _v_change(Fsa, Fsc)
     d_Vsv_dt = _v_change(Fsc, Fsv)
     d_Vvc_dt = _v_change(Fsv + Fcrb, Fvc)
-    d_Frv_sm_dt = _pulmonary_valve_flow_change(Frv, Frv_sm, tauC0)
+    d_Frv_sm_dt = _pulmonary_valve_flow_change(Frv, Frv_sm, tauCO)
     d_Faop_dt = _forward_flow(Paop, Faop * Raop + Paod, Laop)
     d_Faod_dt = _forward_flow(MAPmod, Faod * Raod - Psap, Laod)
     d_Paop_dt = _pressure_aop_change(Flv, d_Vaop_dt, Faop, Fcorepi, Ccorepi)
 
     # ----------- pulmonary circulation ----------- #
     # pressures
-    Ppap = _ppap(Prv, Ppap, Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv)
     Ppad = _ppad(Vpad, Vpad0, Kxp, Kxv, Fpap, Rtpad, Fpad, Cpad)
     Ppa = _pp(Vpa, Vpa0, Cpa, Kxp, Kxv)
     Ppc = _pp(Vpc, Vpc0, Cpc, Kxp, Kxv)
@@ -212,16 +193,16 @@ def ODE(t, y,
 
     # ----------- coronary circulation ----------- #
     # pressures
-    Pcorepi = _p_eq(Paop)
-    Pcorintra = _pcor(Vcorintra, Vcorintra0, Ccorintra, Kxp1, Kxv1)
+    # Pcorepi = _p_eq(Paop)
+    # Pcorintra = _pcor(Vcorintra, Vcorintra0, Ccorintra, Kxp1, Kxv1)
+    # Pcorintrac = _pcorc(Pcorintra, Plv)
     Pcorcap = _pcor(Vcorcap, Vcorcap0, Ccorcap, Kxp1, Kxv1)
     Pcorvn = _pcor(Vcorvn, Vcorvn0, Ccorvn, Kxp, Kxv)
-    Pcorintrac = _pcorc(Pcorintra, Plv)
     Pcorcapc = _pcorc(Pcorcap, Plv)
     Pcorvnc = _p_eq(Pcorvn)
 
     # flows
-    Fcorepi = _fcor(Pcorepi, Pcorintrac, Rcorepi)
+    # Fcorepi = _fcor(Pcorepi, Pcorintrac, Rcorepi)
     Fcorintra = _fcor(Pcorintrac, Pcorcapc, Rcorintra)
     Fcorcap = _fcor(Pcorcapc, Pcorvnc, Rcorcap)
     Fcorvn = _fcor(Pcorvnc, Pra, Rcorvn)
@@ -236,12 +217,12 @@ def ODE(t, y,
     # Equation 2 order!
 
     # ----------- blood ----------- #
-    tbv = _total_blood_volume(Vheart, VPulArt, Vpc, Vpv, VSysArt, Vsc, VSysVen)
-    hv = _heart_volume(Vra, Vrv, Vla, Vlv, Vcorcirc)
-    cv = _coronary_volume(Vcorepi, Vcorintra, Vcorcap, Vcorvn)
-    sav = _systemic_arterial_volume(Vaop, Vaod, Vsap, Vsa)
-    svv = _systemic_venous_volume(Vsv, Vvc)
-    pav = _pulmonary_arterial_volume(Vpap, Vpad, Vpa)
+    Vcorcirc = _coronary_volume(Vcorepi, Vcorintra, Vcorcap, Vcorvn)
+    Vheart = _heart_volume(Vra, Vrv, Vla, Vlv, Vcorcirc)
+    VSysArt = _systemic_arterial_volume(Vaop, Vaod, Vsap, Vsa)
+    VSysVen = _systemic_venous_volume(Vsv, Vvc)
+    VPulArt = _pulmonary_arterial_volume(Vpap, Vpad, Vpa)
+    TBV = _total_blood_volume(Vheart, VPulArt, Vpc, Vpv, VSysArt, Vsc, VSysVen)
 
     # heart
     d_Vra_dt = _volume_change(Fvc + Fcorvn, Fra)
@@ -249,13 +230,31 @@ def ODE(t, y,
     d_Vla_dt = _volume_change(Fpv, Fla)
     d_Vlv_dt = _volume_change(Fla, Flv)
 
-    dx_dt = np.array([
-        d_Vra_dt, d_Vrv_dt, d_Vla_dt, d_Vlv_dt,
-        d_ABPfol_dt, d_AOFmod_dt, d_Vaop_dt, d_Vaod_dt, d_Vsa_dt, d_Vsap_dt, d_Vsc_dt, d_Vsv_dt, d_Vvc_dt, d_Frv_sm_dt, d_Faop_dt, d_Faod_dt, d_Paop_dt,
-        d_Vpad_dt, d_Vpap_dt, d_Vpa_dt, d_Vpc_dt, d_Vpv_dt, d_Fpap_dt, d_Fpad_dt,
-        d_Vcorepi_dt, d_Vcorintra_dt, d_Vcorcap_dt, d_Vcorvn_dt
+    d_MAPmeas_dt = _mapmeas_change(ABPshift, MAPmeas, tauMAP)
+    d_COmea_dt = _comea_change(PAFmeas[n], COmea, tauCO)
+    d_ABPfol_dt = _abp_change(ABPshift, ABPfol, tauABP)
+
+    d_Nbr_dt = Nbr_t
+    d_Nbr_t_dt = _firing_frequency(d_ABPfol_dt, Nbr_t, Nbr, ABPshift, a, a1, a2, K)
+    d_N_con_dt = _n_change(t, np.min(tmeas), l_con, N_con, K_con, Nbr_list, Nbr_list_idx, T_con)
+    d_N_vaso_dt = _n_change(t, np.min(tmeas), l_vaso, N_vaso, K_vaso, Nbr_list, Nbr_list_idx, T_vaso)
+
+    dy = np.array([
+        HRa, HRv,
+        d_Vra_dt, d_Vrv_dt, d_Vla_dt, d_Vlv_dt, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave,
+        d_MAPmeas_dt, d_Faop_dt, d_Faod_dt, d_Frv_sm_dt, d_Vaop_dt, d_Vaod_dt, d_Vsa_dt, d_Vsap_dt, d_Vsc_dt, d_Vsv_dt, d_Vvc_dt, d_Paop_dt, d_AOFmod_dt, d_ABPfol_dt, d_COmea_dt,
+        d_Vpap_dt, d_Vpad_dt, d_Vpa_dt, d_Vpc_dt, d_Vpv_dt, d_Fpap_dt, d_Fpad_dt,
+        d_Vcorepi_dt, d_Vcorintra_dt, d_Vcorcap_dt, d_Vcorvn_dt,
+        d_Nbr_dt, d_Nbr_t_dt, d_N_con_dt, d_N_vaso_dt, af_con2
     ])
-    return dx_dt
+    types_dict = {i: type(dy[i]) for i, _ in enumerate(dy)}
+
+    Nbr_list.append(Nbr)
+    Nbr_list_idx.append(t)
+
+    print(f"t={t:.2f}: MAPmeas[{MAPmeas:.2f}] TBV[{TBV:.2f}] HRa[{HRa:.2f}] HRv[{HRv:.2f}]")
+
+    return dy
 
 
 def call_cardio(args, params):
@@ -272,6 +271,9 @@ def call_cardio(args, params):
     ABPmeas = abp_df["ABP"].values
 
     ABPshift = _arterial_blood_pressure(ABPmeas[0], tmeas[0], params.loc["offv", "value"])
+
+    # TODO: we need it!
+    PAFmeas = ABPmeas
 
     ########## initial values
     # heart
@@ -334,6 +336,13 @@ def call_cardio(args, params):
     af_con2 = af_con
     #########
 
+    Vcorcirc = _coronary_volume(Vcorepi, Vcorintra, Vcorcap, Vcorvn)
+    Vheart = _heart_volume(Vra, Vrv, Vla, Vlv, Vcorcirc)
+    VSysArt = _systemic_arterial_volume(Vaop, Vaod, Vsap, Vsa)
+    VSysVen = _systemic_venous_volume(Vsv, Vvc)
+    VPulArt = _pulmonary_arterial_volume(Vpap, Vpad, Vpa)
+    TBV = _total_blood_volume(Vheart, VPulArt, Vpc, Vpv, VSysArt, Vsc, VSysVen)
+
     # initial condition for the ODE solver
     y0 = np.array([
         HRa, HRv, Vra, Vrv, Vla, Vlv, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave,
@@ -343,11 +352,151 @@ def call_cardio(args, params):
         Nbr, Nbr_t, N_con, N_vaso, af_con2,
     ])
 
+    Nbr_list = []
+    Nbr_list_idx = []
+
     ODE_args = (
-        x, tHB, HP, tmeas, ABPmeas,
+        x, tHB, HP, tmeas, ABPmeas, PAFmeas, Nbr_list, Nbr_list_idx,
+
+        params.loc["Ts1v", "value"],
+        params.loc["Ts1a", "value"],
+        params.loc["Ts2", "value"],
+        params.loc["offv", "value"],
+        params.loc["Vlvd0", "value"],
+        params.loc["Vlvs0", "value"],
+        params.loc["Vrvd0", "value"],
+        params.loc["Vrvs0", "value"],
+        params.loc["Vlad0", "value"],
+        params.loc["Vlas0", "value"],
+        params.loc["Vrad0", "value"],
+        params.loc["Vras0", "value"],
+        params.loc["Rra", "value"],
+        params.loc["Rla", "value"],
+        params.loc["Rlv", "value"],
+        params.loc["Rrv", "value"],
+        params.loc["PRint", "value"],
+        params.loc["KElv", "value"],
+        params.loc["KErv", "value"],
+        params.loc["Emaxlv1", "value"],
+        params.loc["Eminlv", "value"],
+        params.loc["Emaxrv1", "value"],
+        params.loc["Eminrv", "value"],
+        params.loc["EDVLV", "value"],
+        params.loc["EDVRV", "value"],
+        params.loc["Emaxra", "value"],
+        params.loc["Eminra", "value"],
+        params.loc["Emaxla", "value"],
+        params.loc["Eminla", "value"],
+
+        params.loc["KCOMAP", "value"],
+        params.loc["Raop", "value"],
+        params.loc["Rtaop", "value"],
+        params.loc["Rcrb", "value"],
+        params.loc["Raod", "value"],
+        params.loc["Rtaod", "value"],
+        params.loc["Rsap", "value"],
+        params.loc["Rsc", "value"],
+        params.loc["Rsv", "value"],
+        params.loc["Caop", "value"],
+        params.loc["Caod", "value"],
+        params.loc["Csap", "value"],
+        params.loc["Csc", "value"],
+        params.loc["Vaop0", "value"],
+        params.loc["Vaod0", "value"],
+        params.loc["Vsap0", "value"],
+        params.loc["Vsc0", "value"],
+        params.loc["Laop", "value"],
+        params.loc["Laod", "value"],
+        params.loc["Kc", "value"],
+        params.loc["Do", "value"],
+        params.loc["Vsa0", "value"],
+        params.loc["Vsa_max", "value"],
+        params.loc["Kp1", "value"],
+        params.loc["Kp2", "value"],
+        params.loc["Kr", "value"],
+        params.loc["Rsa0", "value"],
+        params.loc["tau_p", "value"],
+        params.loc["Ksv", "value"],
+        params.loc["Kv1", "value"],
+        params.loc["Vmax_sv", "value"],
+        params.loc["D2", "value"],
+        params.loc["K1", "value"],
+        params.loc["K2", "value"],
+        params.loc["KR", "value"],
+        params.loc["R0", "value"],
+        params.loc["Vvc0", "value"],
+        params.loc["Vmax_vc", "value"],
+        params.loc["Vmin_vc", "value"],
+        params.loc["tauCO", "value"],
+        params.loc["Kxp", "value"],
+        params.loc["Kxv", "value"],
+        params.loc["Kxv1", "value"],
+        params.loc["Kxp1", "value"],
+        params.loc["tauMAP", "value"],
+        params.loc["tauABP", "value"],
+
+        params.loc["Rtpap", "value"],
+        params.loc["Rtpad", "value"],
+        params.loc["Rpap", "value"],
+        params.loc["Rpad", "value"],
+        params.loc["Rps", "value"],
+        params.loc["Rpa", "value"],
+        params.loc["Rpc", "value"],
+        params.loc["Rpv", "value"],
+        params.loc["Cpap", "value"],
+        params.loc["Cpad", "value"],
+        params.loc["Cpa", "value"],
+        params.loc["Cpc", "value"],
+        params.loc["Cpv", "value"],
+        params.loc["Vpap0", "value"],
+        params.loc["Vpad0", "value"],
+        params.loc["Vpa0", "value"],
+        params.loc["Vpc0", "value"],
+        params.loc["Vpv0", "value"],
+        params.loc["Lpap", "value"],
+        params.loc["Lpad", "value"],
+
+        params.loc["Rcorepi", "value"],
+        params.loc["Rcorintra", "value"],
+        params.loc["Rcorcap", "value"],
+        params.loc["Rcorvn", "value"],
+        params.loc["Ccorepi", "value"],
+        params.loc["Ccorintra", "value"],
+        params.loc["Ccorcap", "value"],
+        params.loc["Ccorvn", "value"],
+        params.loc["Vcorepi0", "value"],
+        params.loc["Vcorintra0", "value"],
+        params.loc["Vcorcap0", "value"],
+        params.loc["Vcorvn0", "value"],
+
+        params.loc["a", "value"],
+        params.loc["a1", "value"],
+        params.loc["a2", "value"],
+        params.loc["K", "value"],
+        params.loc["K_con", "value"],
+        params.loc["T_con", "value"],
+        params.loc["l_con", "value"],
+        params.loc["a_con", "value"],
+        params.loc["b_con", "value"],
+        params.loc["tau_con", "value"],
+        params.loc["No_con", "value"],
+        params.loc["K_vaso", "value"],
+        params.loc["T_vaso", "value"],
+        params.loc["l_vaso", "value"],
+        params.loc["a_vaso", "value"],
+        params.loc["tau_vaso", "value"],
+        params.loc["No_vaso", "value"],
+        params.loc["amin", "value"],
+        params.loc["bmin", "value"],
+        params.loc["Ka", "value"],
+        params.loc["Kb", "value"]
     )
+
+    # i = np.argmin(np.abs(tmeas - (tmeas[5] + params.loc["offv", "value"])))
+    # ABPmeas[]
+
     sol = solve_ivp(fun=ODE, t_span=[np.min(tmeas), np.max(tmeas)], y0=y0,
-                    args=ODE_args, t_eval=tmeas,
+                    args=ODE_args, #t_eval=tmeas,
                     method="RK23")
 
     return

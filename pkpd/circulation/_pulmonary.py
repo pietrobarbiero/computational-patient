@@ -5,14 +5,23 @@ from ._common import _psi
 # Circulation Pressures #
 #########################
 
+def _ppap1(Prv, Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv):
+    psi = _psi(Vpap, Kxp, Kxv)
+    return ((Rtpap * Prv) - (Rrv * Fpap * Rtpap) +
+            (Rrv * (((Vpap - Vpap0) / Cpap) - psi))) / (Rtpap + Rrv)
 
-def _ppap(Prv, Ppap, Rtpap, Rrv, Fpap, Vpap, Vpap0,
-          Cpap, Kxp, Kxv):
+
+def _ppap2(Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv):
+    psi = _psi(Vpap, Kxp, Kxv)
+    # TODO: double check equation A.61.b
+    return (-(Rrv * Fpap * Rtpap) + (Rrv * (((Vpap - Vpap0) / Cpap) - psi))) / Rrv
+
+
+def _ppap(Prv, Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv):
     """
     Equation A.61
 
     :param Prv:
-    :param Ppap:
     :param Rtpap:
     :param Rrv:
     :param Fpap:
@@ -23,13 +32,12 @@ def _ppap(Prv, Ppap, Rtpap, Rrv, Fpap, Vpap, Vpap0,
     :param Kxv:
     :return:
     """
-    psi = _psi(Vpap, Kxp, Kxv)
-    if Prv > Ppap:
-        return ((Rtpap * Prv) - (Rrv * Fpap * Rtpap) + (
-                Rrv * (((Vpap - Vpap0) / Cpap) - psi))) / (Rtpap + Rrv)
+    ppap1 = _ppap1(Prv, Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv)
+    if Prv > ppap1:
+        return ppap1
 
-    # TODO: double check equation A.61.b
-    return (-(Rrv * Fpap * Rtpap) + (Rrv * (((Vpap - Vpap0) / Cpap) - psi))) / Rrv
+    ppap2 = _ppap2(Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv)
+    return ppap2
 
 
 def _ppad(Vpad, Vpad0, Kxp, Kxv, Fpap, Rtpad, Fpad, Cpad):
@@ -106,45 +114,3 @@ def _fpa(Ppos, Pneg, Lp):
     :return:
     """
     return (Ppos - Pneg) / Lp
-
-
-def _equations(t,
-               Ppap, Ppad, Ppa, Ppc, Ppv,
-               Vpap, Vpad, Vpa, Vpc, Vpv,
-               Fpap, Fpad, Fps, Fpa, Fpc, Fpv,
-               # heart
-               Prv, Pla, Frv,
-               #parameters
-               Rtpap, Rtpad, Rpap, Rpad, Rps, Rpa, Rpc, Rpv,
-               Cpap, Cpad, Cpa, Cpc, Cpv,
-               Vpap0, Vpad0, Vpa0, Vpc0, Vpv0,
-               Lpap, Lpad,
-               # heart
-               Rrv,
-               # systemic
-               Kxp, Kxv):
-
-    # pressures
-    Ppap = _ppap(Prv, Ppap, Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv)
-    Ppad = _ppad(Vpad, Vpad0, Kxp, Kxv, Fpap, Rtpad, Fpad, Cpad)
-    Ppa = _pp(Vpa, Vpa0, Cpa, Kxp, Kxv)
-    Ppc = _pp(Vpc, Vpc0, Cpc, Kxp, Kxv)
-    Ppv = _pp(Vpv, Vpv0, Cpv, Kxp, Kxv)
-
-    # flows
-    Fps = _fp(Ppa, Ppv, Rps)
-    Fpa = _fp(Ppa, Ppc, Rpa)
-    Fpc = _fp(Ppc, Ppv, Rpc)
-    Fpv = _fp(Ppv, Pla, Rpv)
-
-    # differential equations
-    d_Vpad_dt = _vp(Fpap, Fpad)
-    d_Vpap_dt = _vp(Frv, Fpap)
-    d_Vpa_dt = _vp(Fpad, Fps + Fpa)
-    d_Vpc_dt = _vp(Fpa, Fpc)
-    d_Vpv_dt = _vp(Fpc + Fps, Fpv)
-    d_Fpap_dt = _fpa(Ppap, Ppad + Fpap*Rpap, Lpap)
-    d_Fpad_dt = _fpa(Ppad, Ppa + Fpad*Rpad, Lpad)
-
-    return d_Vpad_dt, d_Vpap_dt, d_Vpa_dt, d_Vpc_dt, \
-           d_Vpv_dt, d_Fpap_dt, d_Fpad_dt
