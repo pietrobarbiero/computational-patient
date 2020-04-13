@@ -53,6 +53,13 @@ def ODE(t, y,
         K_vaso, T_vaso, l_vaso, a_vaso, tau_vaso, No_vaso,
         amin, bmin, Ka, Kb
         ):
+    
+    to_L_min = 10 ** (-3) * 60
+    to_ml_sec = 10 ** 3 / 60
+    to_min_L = 60 / 10 ** 3
+    to_ml = 10 ** 3
+    to_min = 60
+    to_min2_L = 10 ** 3 / 60 ** 2
 
     HRa, HRv, Vra, Vrv, Vla, Vlv, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave,\
     MAPmeas, Faop, Faod, Frv_sm, Vaop, Vaod, Vsa, Vsap, Vsc, Vsv, Vvc, Paop, AOFmod, ABPfol, COmea,\
@@ -104,27 +111,33 @@ def ODE(t, y,
     Pra = _pa(Era, Vra, Vra0, Kxp, Kxv)
     Prv = _pv(Erv, Vrv, Vrv0, af_con2, Kxp, Kxv)
     Pla = _pa(Ela, Vla, Vla0, Kxp, Kxv)
-    Plv = _pv(Elv, Vlv, Vlv0, af_con2, Kxp, Kxv)
+    Plv = _pv(Elv, Vlv, Vlv0, af_con2, Kxp, Kxv) # TODO: tbc
 
-    Ppap = _ppap(Prv, Rtpap, Rrv, Fpap, Vpap, Vpap0, Cpap, Kxp, Kxv)
-    # flows
-    Fra = _fi(Pra, Prv, Rra)
-    Frv = _fi(Prv, Ppap, Rrv)
-    Fla = _fi(Pla, Plv, Rla)
-    Flv = _fi(Plv, Paop, Rlv)
+    Ppap = _ppap(Prv, Rtpap, Rrv, 
+                 Fpap * to_ml_sec, 
+                 Vpap, Vpap0, Cpap, Kxp, Kxv)
+    # flows [L/min]
+    Fra = _fi(Pra, Prv, Rra) * to_L_min
+    Frv = _fi(Prv, Ppap, Rrv) * to_L_min
+    Fla = _fi(Pla, Plv, Rla) * to_L_min
+    Flv = _fi(Plv, Paop, Rlv) * to_L_min
 
     # ----------- systemic circulation ----------- #
     Pvc = _pvc(Vvc, Vvc0, Vmin_vc, K1, K2, D2, Kxp, Kxv)
     # misc
+    # [L/min]
     COmod = _cardiac_output(Frv_sm)
-    SV = _stroke_volume(COmod, HR)
+    # [ml]
+    SV = _stroke_volume(COmod, HR) * to_ml
 
     # TODO: check this arrangement
     i = np.argmin(np.abs(tmeas - (t + offv)))
     ABPshift = ABPmeas[i]
 
     Kv = _kv(Kv1, Ksv)
-    MAPmod = _map(Rtaod, Rcrb, AOFmod, Faod,
+    MAPmod = _map(Rtaod, Rcrb,
+                  AOFmod * to_ml_sec,
+                  Faod * to_ml_sec,
                   Vaod, Vaod0, Caod, Kxp, Kxv, Pvc)
 
     b_vaso = _b_vaso(a_vaso)
@@ -142,54 +155,80 @@ def ODE(t, y,
     Rsa = _rsa(Kr, f_vaso, Vsa, Vsa_max, Rsa0)
     Rvc = _rvc(KR, Vmax_vc, Vvc, R0)
 
-    # flows
-    Fcrb = _forward_flow(MAPmod, Pvc, Rcrb)
-    Fsap = _forward_flow(Psap, Psa, Rsap)
-    Fsa = _forward_flow(Psa, Psc, Rsa)
-    Fsc = _forward_flow(Psc, Psv, Rsc)
-    Fsv = _forward_flow(Psv, Pvc, Rsv)
-    Fvc = _forward_flow(Pvc, Pra, Rvc)
+    # flows [L/min]
+    Fcrb = _forward_flow(MAPmod, Pvc, Rcrb) * to_L_min
+    Fsap = _forward_flow(Psap, Psa, Rsap) * to_L_min
+    Fsa = _forward_flow(Psa, Psc, Rsa) * to_L_min
+    Fsc = _forward_flow(Psc, Psv, Rsc) * to_L_min
+    Fsv = _forward_flow(Psv, Pvc, Rsv) * to_L_min
+    Fvc = _forward_flow(Pvc, Pra, Rvc) * to_L_min
 
     Pcorepi = _p_eq(Paop)
     Pcorintra = _pcor(Vcorintra, Vcorintra0, Ccorintra, Kxp1, Kxv1)
     Pcorintrac = _pcorc(Pcorintra, Plv)
-    Fcorepi = _fcor(Pcorepi, Pcorintrac, Rcorepi)
+    # [L/min]
+    Fcorepi = _fcor(Pcorepi, Pcorintrac, Rcorepi) * to_L_min
     # differential equations
     d_ABPfol_dt = _abp_change(ABPshift, ABPfol, tauABP)
+    # [L/min^2]
     d_AOFmod_dt = _aortic_flow_change(MAPmeas, MAPmod, KCOMAP)
+    # [ml/sec]
     d_Vaop_dt = _vaop_change(Paop, Vaop, Vaop0, Caop, Rtaop)
-    d_Vaod_dt = _v_change(AOFmod, Faod + Fcrb)
-    d_Vsa_dt = _v_change(Fsap, Fsa)
-    d_Vsap_dt = _v_change(Faod, Fsap)
-    d_Vsc_dt = _v_change(Fsa, Fsc)
-    d_Vsv_dt = _v_change(Fsc, Fsv)
-    d_Vvc_dt = _v_change(Fsv + Fcrb, Fvc)
-    d_Frv_sm_dt = _pulmonary_valve_flow_change(Frv, Frv_sm, tauCO)
-    d_Faop_dt = _forward_flow(Paop, Faop * Raop + Paod, Laop)
-    d_Faod_dt = _forward_flow(MAPmod, Faod * Raod - Psap, Laod)
-    d_Paop_dt = _pressure_aop_change(Flv, d_Vaop_dt, Faop, Fcorepi, Ccorepi)
+    d_Vaod_dt = _v_change(AOFmod, Faod + Fcrb) * to_ml_sec
+    d_Vsa_dt = _v_change(Fsap, Fsa) * to_ml_sec
+    d_Vsap_dt = _v_change(Faod, Fsap) * to_ml_sec
+    d_Vsc_dt = _v_change(Fsa, Fsc) * to_ml_sec
+    d_Vsv_dt = _v_change(Fsc, Fsv) * to_ml_sec
+    d_Vvc_dt = _v_change(Fsv + Fcrb, Fvc) * to_ml_sec
+    # [L/min^2]
+    d_Frv_sm_dt = _pulmonary_valve_flow_change(Frv, Frv_sm,
+                                               tauCO * to_min)
+    d_Faop_dt = _forward_flow(Paop,
+                              Faop * Raop * to_min_L + Paod,
+                              Laop * to_min2_L)
+    d_Faod_dt = _forward_flow(MAPmod,
+                              Faod * Raod * to_min_L - Psap,
+                              Laod * to_min2_L)
+    # [mmHg/sec]
+    d_Paop_dt = _pressure_aop_change(Flv * to_ml_sec, # [L/min]
+                                     d_Vaop_dt, # [ml/sec]
+                                     Faop * to_ml_sec, # [L/min]
+                                     Fcorepi * to_ml_sec, # [L/min]
+                                     Ccorepi) # ml*mmHg^(-1)
 
     # ----------- pulmonary circulation ----------- #
+
     # pressures
-    Ppad = _ppad(Vpad, Vpad0, Kxp, Kxv, Fpap, Rtpad, Fpad, Cpad)
+    # [mmHg]
+    Ppad = _ppad(Vpad, Vpad0, Kxp, Kxv,
+                 Fpap * to_ml_sec, # [L/min]
+                 Rtpad,
+                 Fpad * to_ml_sec, # [L/min]
+                 Cpad)
     Ppa = _pp(Vpa, Vpa0, Cpa, Kxp, Kxv)
     Ppc = _pp(Vpc, Vpc0, Cpc, Kxp, Kxv)
     Ppv = _pp(Vpv, Vpv0, Cpv, Kxp, Kxv)
 
     # flows
-    Fps = _fp(Ppa, Ppv, Rps)
-    Fpa = _fp(Ppa, Ppc, Rpa)
-    Fpc = _fp(Ppc, Ppv, Rpc)
-    Fpv = _fp(Ppv, Pla, Rpv)
+    Fps = _fp(Ppa, Ppv, Rps) * to_L_min
+    Fpa = _fp(Ppa, Ppc, Rpa) * to_L_min
+    Fpc = _fp(Ppc, Ppv, Rpc) * to_L_min
+    Fpv = _fp(Ppv, Pla, Rpv) * to_L_min
 
     # differential equations
-    d_Vpad_dt = _vp(Fpap, Fpad)
-    d_Vpap_dt = _vp(Frv, Fpap)
-    d_Vpa_dt = _vp(Fpad, Fps + Fpa)
-    d_Vpc_dt = _vp(Fpa, Fpc)
-    d_Vpv_dt = _vp(Fpc + Fps, Fpv)
-    d_Fpap_dt = _fpa(Ppap, Ppad + Fpap*Rpap, Lpap)
-    d_Fpad_dt = _fpa(Ppad, Ppa + Fpad*Rpad, Lpad)
+    # [ml/sec]
+    d_Vpad_dt = _vp(Fpap, Fpad) * to_ml_sec
+    d_Vpap_dt = _vp(Frv, Fpap) * to_ml_sec
+    d_Vpa_dt = _vp(Fpad, Fps + Fpa) * to_ml_sec
+    d_Vpc_dt = _vp(Fpa, Fpc) * to_ml_sec
+    d_Vpv_dt = _vp(Fpc + Fps, Fpv) * to_ml_sec
+    # [L/min^2]
+    d_Fpap_dt = _fpa(Ppap,
+                     Ppad + Fpap * Rpap * to_min_L,
+                     Lpap * to_min2_L)
+    d_Fpad_dt = _fpa(Ppad,
+                     Ppa + Fpad * Rpad * to_min_L,
+                     Lpad)
 
     # ----------- coronary circulation ----------- #
     # pressures
@@ -203,15 +242,18 @@ def ODE(t, y,
 
     # flows
     # Fcorepi = _fcor(Pcorepi, Pcorintrac, Rcorepi)
-    Fcorintra = _fcor(Pcorintrac, Pcorcapc, Rcorintra)
-    Fcorcap = _fcor(Pcorcapc, Pcorvnc, Rcorcap)
-    Fcorvn = _fcor(Pcorvnc, Pra, Rcorvn)
+    # [L/min]
+    Fcorintra = _fcor(Pcorintrac, Pcorcapc, Rcorintra) * to_L_min
+    Fcorcap = _fcor(Pcorcapc, Pcorvnc, Rcorcap) * to_L_min
+    Fcorvn = _fcor(Pcorvnc, Pra, Rcorvn) * to_L_min
 
     # differential equations
-    d_Vcorepi_dt = _vcor(Flv, d_Vaop_dt + Faop + Fcorepi)
-    d_Vcorintra_dt = _vcor(Fcorepi, Fcorintra)
-    d_Vcorcap_dt = _vcor(Fcorintra, Fcorcap)
-    d_Vcorvn_dt = _vcor(Fcorcap, Fcorvn)
+    # [ml/sec]
+    d_Vcorepi_dt = _vcor(Flv, # [L/min]
+                         d_Vaop_dt * to_L_min + Faop + Fcorepi) * to_ml_sec # [ml/sec] * [L/min] * [L/min]
+    d_Vcorintra_dt = _vcor(Fcorepi, Fcorintra) * to_ml_sec
+    d_Vcorcap_dt = _vcor(Fcorintra, Fcorcap) * to_ml_sec
+    d_Vcorvn_dt = _vcor(Fcorcap, Fcorvn) * to_ml_sec
 
     # ----------- baroreceptor ----------- #
     # Equation 2 order!
@@ -225,19 +267,26 @@ def ODE(t, y,
     TBV = _total_blood_volume(Vheart, VPulArt, Vpc, Vpv, VSysArt, Vsc, VSysVen)
 
     # heart
-    d_Vra_dt = _volume_change(Fvc + Fcorvn, Fra)
-    d_Vrv_dt = _volume_change(Fra, Frv)
-    d_Vla_dt = _volume_change(Fpv, Fla)
-    d_Vlv_dt = _volume_change(Fla, Flv)
+    # [ml/sec]
+    d_Vra_dt = _volume_change(Fvc + Fcorvn, Fra) * to_ml_sec
+    d_Vrv_dt = _volume_change(Fra, Frv) * to_ml_sec
+    d_Vla_dt = _volume_change(Fpv, Fla) * to_ml_sec
+    d_Vlv_dt = _volume_change(Fla, Flv) * to_ml_sec
 
+    # [mmHg/sec]
     d_MAPmeas_dt = _mapmeas_change(ABPshift, MAPmeas, tauMAP)
-    d_COmea_dt = _comea_change(PAFmeas[n], COmea, tauCO)
+    # [L/min^2]
+    d_COmea_dt = _comea_change(PAFmeas[n], COmea, tauCO * to_min)
+    # [mmHg/sec]
     d_ABPfol_dt = _abp_change(ABPshift, ABPfol, tauABP)
 
+    # [sec^-2]
     d_Nbr_dt = Nbr_t
+    # [sec^-3]
     d_Nbr_t_dt = _firing_frequency(d_ABPfol_dt, Nbr_t, Nbr, ABPshift, a, a1, a2, K)
-    d_N_con_dt = _n_change(t, np.min(tmeas), l_con, N_con, K_con, Nbr_list, Nbr_list_idx, T_con)
-    d_N_vaso_dt = _n_change(t, np.min(tmeas), l_vaso, N_vaso, K_vaso, Nbr_list, Nbr_list_idx, T_vaso)
+    # [sec^-2]
+    d_N_con_dt = _n_change(t, tHB[1], l_con, N_con, K_con, Nbr_list, Nbr_list_idx, T_con)
+    d_N_vaso_dt = _n_change(t, tHB[1], l_vaso, N_vaso, K_vaso, Nbr_list, Nbr_list_idx, T_vaso)
 
     dy = np.array([
         HRa, HRv,
@@ -252,7 +301,14 @@ def ODE(t, y,
     Nbr_list.append(Nbr)
     Nbr_list_idx.append(t)
 
-    print(f"t={t:.2f}: MAPmeas[{MAPmeas:.2f}] TBV[{TBV:.2f}] HRa[{HRa:.2f}] HRv[{HRv:.2f}]")
+    print(f"t={t:.2f}: ya[{ya:.2f}] ta_rel[{ta_rel:.2f}] tPwave[{tPwave:.2f}]")
+    print(f"t={t:.2f}: Ela[{Ela:.2f}] Vla[{Vla:.2f}]")
+    print(f"t={t:.2f}: Ppv[{Ppv:.2f}] Pla[{Pla:.2f}]")
+    print(f"t={t:.2f}: Fpv[{Fpv:.2f}] Fla[{Fla:.2f}] Flv[{Flv:.2f}]")
+    print(f"t={t:.2f}: Vra[{Vra:.2f}] Vrv[{Vrv:.2f}] Vla[{Vla:.2f}] Vlv[{Vlv:.2f}] TBV[{TBV:.2f}]\n")
+
+    if t > 1.02:
+        print()
 
     return dy
 
@@ -289,8 +345,8 @@ def call_cardio(args, params):
     Vvarrvs0 = params.loc["Vrvs0", "value"]
     n = np.min(x)
     m = np.min(x)
-    tRwave = np.min(tmeas) - params.loc["offv", "value"]
-    tPwave = np.min(tmeas) - params.loc["PRint", "value"] - params.loc["offv", "value"]
+    tRwave = tHB[1] - params.loc["offv", "value"]
+    tPwave = tHB[1] - params.loc["PRint", "value"] - params.loc["offv", "value"]
 
     # systemic circulation
     MAPmeas = ABPshift
@@ -495,8 +551,12 @@ def call_cardio(args, params):
     # i = np.argmin(np.abs(tmeas - (tmeas[5] + params.loc["offv", "value"])))
     # ABPmeas[]
 
-    sol = solve_ivp(fun=ODE, t_span=[np.min(tmeas), np.max(tmeas)], y0=y0,
-                    args=ODE_args, #t_eval=tmeas,
+    # fig =
+
+    sol = solve_ivp(fun=ODE, t_span=[tHB[1], np.max(tmeas)], y0=y0,
+                    args=ODE_args,
+                    # first_step=0.02, #t_eval=tmeas,
+                    # rtol=1e-1, atol=1e-2,
                     method="RK23")
 
     return
