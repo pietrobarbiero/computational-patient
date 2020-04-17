@@ -34,7 +34,8 @@ def _n_change(t, tmin, l, N, K, Nbr_list, time_list, T):
     """
     if t - tmin > l:
         # TODO: double check this arrangement
-        Nbr = Nbr_list[np.argmin(np.abs(time_list - (t - l)))]
+        # Nbr = Nbr_list[np.argmin(np.abs(time_list - (t - l)))]
+        Nbr = np.interp(t - l, time_list, Nbr_list)
         return (-N + (K * Nbr)) / T
 
     return 0

@@ -47,8 +47,10 @@ def _trigger_A(t, tHB, HP, PRint, offv, Ts1a, Ts2):
     :return:
     """
     if t >= tHB - PRint - offv:
-        HRa = 1 / HP
-        Tsa = Ts1a * np.sqrt(Ts2 / HRa)
+        # [min^-1]
+        HRa = 1 / (HP / 60)
+        # [sec]
+        Tsa = Ts1a * np.sqrt(Ts2 / (HRa / 60))
         tPwave = tHB - PRint - offv
         return HRa, Tsa, tPwave
 
@@ -79,8 +81,10 @@ def _trigger_B(t, tHB, HP, offv, Ts1v, Ts2, n,
     :return:
     """
     if t >= tHB - offv:
-        HRv = 1 / HP
-        Tsv = Ts1v * np.sqrt(Ts2 / HRv)
+        # [min^-1]
+        HRv = 1 / (HP / 60)
+        # [sec]
+        Tsv = Ts1v * np.sqrt(Ts2 / (HRv / 60))
         tRwave = tHB - offv
         m = n
 

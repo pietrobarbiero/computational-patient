@@ -164,7 +164,9 @@ def _psa_a(Kc, Vsa, Vsa0, Do):
     :param Do:
     :return:
     """
-    return Kc * np.log(((Vsa - Vsa0) / Do) + 1)
+    # TODO: double check equation!
+    #  log_e or log_10?
+    return Kc * np.log10(((Vsa - Vsa0) / Do) + 1)
 
 
 def _psa_p(Kp1, Kp2, tau_p, Vsa, Vsa0):
@@ -217,7 +219,7 @@ def _psv(Kv, Vmax_sv, Vsv):
     :param Vsv:
     :return:
     """
-    return -Kv * np.log((Vmax_sv / Vsv) - 0.99)
+    return -Kv * np.log10((Vmax_sv / Vsv) - 0.99)
 
 
 def _pvc(Vvc, Vvc0, Vmin_vc, K1, K2, D2, Kxp, Kxv):
