@@ -1,10 +1,10 @@
-PK/PD model for COVID19 patients with diabetic kidney disease
+Multiscale model for comorbid patients
 =============================================================
 
-A mathematical model of glucose-stimulated local
-renin-angiotensin system (RAS) in podocytes [1][2][3] combined
-with a PKPD model of ACE inhibition of the RAS [4][5]
-adjusted for patients with SARS-CoV-2.
+The following mathematical models will be integrated:
+
+- a PK/PD model of ACE inhibition of the renin-angiotensin system (RAS) [1][2][3][4][5]
+- a subject-specific model of the circulatory system
 
 Related Publications
 ---------------------
@@ -23,6 +23,8 @@ inhibition of the renin-angiotensin system for normal and impaired renal functio
 [5] Ford Versypt, A.N. ACEInhibPKPD. 2017. Available online: http://github.com/ashleefv/ACEInhibPKPD
 (accessed on 31 March 2020).
 
+[6] Neal, Maxwell Lewis, and James B. Bassingthwaighte. "Subject-specific model estimation of cardiac output and blood volume during hemorrhage." Cardiovascular engineering 7.3 (2007): 97-120.
+
 Quick start
 -----------
 
@@ -36,25 +38,25 @@ You can install the software along with all its dependencies from
     $ pip install -r requirements.txt .
 
 After having installed all the requirements you can run
-the example script ``./examples/example.py``.
-The results will be saved under the directory
-``./examples/data/``.
-Once the results have been saved, you can make some plots
-by running the script ``./examples/make_plots.py``.
+the example scripts:
+
+- ``./examples/dkd.py`` for running the PK/PD model. The results will be saved under the directory``./examples/data/``. Once the results have been saved, you can make some plots by running the script ``./examples/make_plots.py``.
+- ``./examples/cardio.py`` for running the cardiovascular model. Results will be inside ``./examples/cardio_y.csv`` and ``./examples/volumes.png``.
 
 Contributing
 -------------
 
-The project (``./pkpd`` directory) has the following structure:
+The project (``./msmodel`` directory) has the following structure:
 
 - the ``pk`` directory is used to specify the equations of the Pharmacokinetic model
 - the ``pd`` directory is used to specify the equations of the Pharmacodynamic model
-- the ``ode`` directory is used to specify the ODE system
+- the ``circulation`` directory is used to specify the equations of the circulatory system
+- the ``ode`` directory is used to specify the ODE systems
 
 The ``_config.py`` file is used to parse command line arguments.
 
-The script ``_covid19_dkd.py`` contains
-the main interface function to run the PK/PD model.
+The script ``_msmodel.py`` contains
+the main interface function to run the ODE systems.
 
 
 Source

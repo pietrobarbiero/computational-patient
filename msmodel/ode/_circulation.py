@@ -254,7 +254,7 @@ def ODE(t, y,
     return dy
 
 
-def call_cardio(args, params, debug=True):
+def call_cardio(args, params, debug=False):
 
     # load input data
     abp_df = pd.read_csv("cardiacdata2.csv")
@@ -488,11 +488,12 @@ def call_cardio(args, params, debug=True):
     )
 
     if not debug:
+        max_time_step = 8
         sol = solve_ivp(fun=ODE,
-                        t_span=[tHB[0], tHB[-2]],
+                        t_span=[tHB[0], tHB[max_time_step]],
                         y0=y0,
                         args=ODE_args,
-                        t_eval=tm[tm<tHB[-2]],
+                        t_eval=tm[tm<tHB[max_time_step]],
                         # first_step=0.02,
                         # rtol=1e-1, atol=1e-2,
                         method="LSODA")
@@ -511,30 +512,6 @@ def call_cardio(args, params, debug=True):
         y_df.to_csv("cardio_y.csv")
 
     y_df = pd.read_csv("cardio_y.csv")
-
-    # plt.figure()
-    # plt.subplot(221)
-    # plt.title("Right atrium")
-    # plt.scatter(y_df["Vra"], Pra, s=2)
-    # plt.xlabel("volume")
-    # plt.ylabel("pressure")
-    # plt.subplot(222)
-    # plt.title("Right ventricle")
-    # plt.scatter(y_df["Vrv"], Prv, s=2)
-    # plt.xlabel("volume")
-    # plt.ylabel("pressure")
-    # plt.subplot(223)
-    # plt.title("Left atrium")
-    # plt.scatter(y_df["Vla"], Pla, s=2)
-    # plt.xlabel("volume")
-    # plt.ylabel("pressure")
-    # plt.subplot(224)
-    # plt.title("Left ventricle")
-    # plt.scatter(y_df["Vlv"], Plv, s=2)
-    # plt.xlabel("volume")
-    # plt.ylabel("pressure")
-    # plt.tight_layout()
-    # plt.show()
 
     tmax = 300
     plt.figure()

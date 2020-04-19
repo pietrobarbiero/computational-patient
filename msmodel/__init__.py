@@ -1,4 +1,4 @@
-from ._covid19_dkd import covid19_dkd_model
+from ._msmodel import covid19_dkd_model
 
 from ._version import __version__
 

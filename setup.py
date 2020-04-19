@@ -1,5 +1,5 @@
 #! /usr/bin/env python
-"""A pkpd."""
+"""A msmodel."""
 
 import codecs
 import os
@@ -7,11 +7,11 @@ import os
 from setuptools import find_packages, setup
 
 # get __version__ from _version.py
-ver_file = os.path.join('pkpd', '_version.py')
+ver_file = os.path.join('msmodel', '_version.py')
 with open(ver_file) as f:
     exec(f.read())
 
-DISTNAME = 'covid19-pkpd-dkd'
+DISTNAME = 'covid19-msmodel-dkd'
 DESCRIPTION = 'PK/PD model for COVID19 patients with diabetic kidney disease.'
 with codecs.open('README.rst', encoding='utf-8-sig') as f:
     LONG_DESCRIPTION = f.read()

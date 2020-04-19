@@ -1,4 +1,4 @@
-name: project-pkpd
+name: project-msmodel
 dependencies:
   - numpy
   - scipy

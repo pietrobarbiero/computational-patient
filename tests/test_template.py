@@ -3,10 +3,10 @@ import unittest
 
 class TestTemplateObject(unittest.TestCase):
     def test_object(self):
-        import pkpd
+        import msmodel
 
-        t = pkpd.TemplateObject()
-        self.assertTrue(isinstance(t, pkpd.TemplateObject))
+        t = msmodel.TemplateObject()
+        self.assertTrue(isinstance(t, msmodel.TemplateObject))
         return
 
 
