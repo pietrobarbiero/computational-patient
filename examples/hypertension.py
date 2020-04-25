@@ -3,7 +3,7 @@ import msmodel
 
 def main():
 
-    msmodel.covid19_dkd_model(model="cardio")
+    msmodel.covid19_dkd_model(model="hypertension")
 
     return
 
