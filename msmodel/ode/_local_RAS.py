@@ -273,4 +273,4 @@ def call_combinedRAS_ACE_PKPD(args, params):
     file_name = f"{args.renal_function}.dat"
     pickle.dump(save_var, open(os.path.join(out_dir, file_name), 'wb'))
 
-    return
+    return solution
