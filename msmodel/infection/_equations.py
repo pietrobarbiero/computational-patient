@@ -4,9 +4,9 @@ from msmodel.pd._equations import _catalized_AngI
 
 
 def mass_balance_AngI_infection(c_Renin, AGT_conc, k_cat_Renin,
-                      Renin_conc, Renin_conc_t0,
-                      k_degr_AngI, k_NEP, k_ACE2, AngI_conc,
-                      c_ACE, Inhibition, k_infection):
+                                Renin_conc, Renin_conc_t0,
+                                k_degr_AngI, k_NEP, k_ACE2, AngI_conc,
+                                c_ACE, Inhibition, k_infection):
     """
     Equation 5
 
@@ -45,7 +45,7 @@ def mass_balance_AngI_infection(c_Renin, AGT_conc, k_cat_Renin,
 
 
 def mass_balance_AngII_infection(h_ANGII, c_AT1, k_APA, k_ACE2, k_AT2, AngII_conc,
-                       c_ACE, AngI_conc, Inhibition, k_infection):
+                                 c_ACE, AngI_conc, Inhibition, k_infection):
     """
     Equation 6
 
@@ -82,8 +82,16 @@ def mass_balance_ANG17(k_NEP, AngI_conc, k_ACE2, k_SARS, AngII_conc, h_ANGII, AN
     :param ANG17_conc:
     :return:
     """
-    return k_NEP * AngI_conc + (k_ACE2 * k_SARS) * AngII_conc - np.log(2) / (5*h_ANGII) * ANG17_conc
+    return k_NEP * AngI_conc + (k_ACE2 * k_SARS) * AngII_conc - np.log(2) / (17.5*h_ANGII) * ANG17_conc
 
 
-def blood_pressure_change(k_1, AngII_conc, k_2, ANG17_conc):
-    return k_1 * AngII_conc - k_2 * ANG17_conc
+def blood_pressure_change(AngII_conc, ANG17_conc, t, sbp_spikes):
+    SSS_ANG2 = 0.0316
+    III_ANG17 = 0.0316
+    sum_list = [
+        sbp_spikes * np.sin(2 * np.pi * t / 24),
+        0.2 * (1 + SSS_ANG2 * AngII_conc),
+        -0.2 * (1 + III_ANG17 * ANG17_conc),
+        # - K_out_SBP * SBP,
+    ]
+    return sum(sum_list)

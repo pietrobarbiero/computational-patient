@@ -10,25 +10,25 @@ import seaborn as sns
 def make_plots(t, y1_list, y2_list, y_d_list, args_list, plot_dir, pressure_list):
     labels = []
     for i in range(0, len(args_list)):
-        labels.append(f"{args_list[i].dose:.2f} mg/die - {args_list[i].renal_function}")
+        labels.append(f"{args_list[i].renal_function}")
 
     f = plt.figure(figsize=[5, 5])
 
     plt.subplot(211)
-    plt.title("Drug concentration")
+    plt.title(f"Drug concentration [{args_list[0].dose:.2f} mg/die]")
     for i in range(0, len(y_d_list)):
-        plt.plot(t, y_d_list[i])
+        plt.plot(t, y_d_list[i], label=labels[i])
     f.axes[0].ticklabel_format(style='plain')
     plt.xlim([0, np.ceil(t[-1])])
     plt.ylim([0, 100])
-    plt.xlabel("t (days)")
+    # plt.xlabel("t (days)")
     plt.ylabel("ng/mL")
-    # plt.legend()
+    plt.legend()
 
     plt.subplot(212)
     plt.title("Sistolic blood pressure")
     for i in range(0, len(pressure_list)):
-        plt.plot(t, pressure_list[i])
+        plt.plot(t, pressure_list[i], label=labels[i])
     plt.xlim([0, np.ceil(t[-1])])
     plt.ylim([100, 200])
     plt.xlabel("t (days)")

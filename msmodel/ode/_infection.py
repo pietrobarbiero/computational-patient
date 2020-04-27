@@ -19,8 +19,9 @@ def ODE(t, conc, drugdose, ke_diacid,
         AngII_conc_t0, Renin_conc_t0,
         baseline_prod_Renin,
         k_degr_Renin, k_degr_AngI, k_degr_AGT,
+        tstart_dosing, glu,
+        sbp_spikes, k_SARS):
 
-        tstart_dosing, glu):
     # Input concentration vector conc contains species AngI, AngII & Renin
     AngI_conc, AngII_conc, Renin_conc, AGT_conc, ANG17_conc, SBP = conc
 
@@ -89,7 +90,6 @@ def ODE(t, conc, drugdose, ke_diacid,
                                          k_degr_Renin,
                                          Renin_conc)
 
-    k_SARS = 0.5
     d_AngI_conc_dt = mass_balance_AngI_infection(c_Renin,
                                                  AGT_conc,
                                                  k_cat_Renin,
@@ -113,9 +113,7 @@ def ODE(t, conc, drugdose, ke_diacid,
                                                    Inhibition,
                                                    k_SARS)
     d_ANG17_conc_dt = mass_balance_ANG17(k_NEP, AngI_conc, k_ACE2, k_SARS, AngII_conc, h_ANGII, ANG17_conc)
-    k_1 = 0.8
-    k_2 = 0.75
-    d_SBP_dt = blood_pressure_change(k_1, AngII_conc, k_2, ANG17_conc)
+    d_SBP_dt = blood_pressure_change(AngII_conc, ANG17_conc, t, sbp_spikes)
 
     # concentration derivative vector has entries for Ang I, Ang II, and Renin
     d_conc_dt = np.array([
@@ -136,7 +134,7 @@ def local_RAS_model(coefficients, drug_dose, tau,
                     AngI_conc_t0, AngII_conc_t0, Renin_conc_t0, diacid_conc_t0,
                     drug_conc_t0, AGT_conc_t0, k_degr_Renin, k_degr_AngI,
                     k_degr_AGT, Mw_AngI, Mw_AngII, Mw_Renin, Mw_AGT,
-                    sim_time_end, tstart_dosing, glu):
+                    sim_time_end, tstart_dosing, glu, sbp, sbp_spikes, k_SARS):
     c_Renin, k_cat_Renin, k_feedback, feedback_capacity, k_cons_AngII = coefficients
 
     # impose constraining assumption that the initial values are steady-state
@@ -145,7 +143,7 @@ def local_RAS_model(coefficients, drug_dose, tau,
     t_eval = np.arange(0, sim_time_end, tau / 500)  # hours
 
     ANG17_conc_t0 = AngII_conc_t0
-    SBP_t0 = 150
+    SBP_t0 = sbp
 
     # initial condition for the ODE solver
     conc_t0 = np.array([AngI_conc_t0, AngII_conc_t0, Renin_conc_t0, AGT_conc_t0, ANG17_conc_t0, SBP_t0])
@@ -158,7 +156,8 @@ def local_RAS_model(coefficients, drug_dose, tau,
         AngII_conc_t0, Renin_conc_t0,
         baseline_prod_Renin,
         k_degr_Renin, k_degr_AngI, k_degr_AGT,
-        tstart_dosing, glu
+        tstart_dosing, glu,
+        sbp_spikes, k_SARS
     )
     sol = solve_ivp(fun=ODE, t_span=[0, sim_time_end], y0=conc_t0,
                     args=ODE_args,
@@ -221,6 +220,17 @@ def call_infection(args, params):
     drug_dose = args.dose * 1e6
     pill_mg = args.dose * 1e-6
     tau = 24 / args.n_dose
+    if args.renal_function == "normal":
+        sbp = 120
+        sbp_spikes = 1.0
+    else:
+        sbp = 150
+        sbp_spikes = 2.0
+
+    if args.infection:
+        k_SARS = 0.01
+    else:
+        k_SARS = 3.5
 
     # ODE coefficients
     coefficients = [
@@ -270,7 +280,10 @@ def call_infection(args, params):
 
                                args.sim_time_end,
                                args.tstart_dosing,
-                               args.glu)
+                               args.glu,
+                               sbp,
+                               sbp_spikes,
+                               k_SARS)
 
     t, diacid_conc, AngII_conc, AngI_conc, \
     Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, SBP = solution
