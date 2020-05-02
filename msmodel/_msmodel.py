@@ -25,7 +25,7 @@ def covid19_dkd_model(model="infection"):
         call_hypertension(args)
 
     elif model == "cardio":
-        params = pd.read_csv('circulation.csv', index_col=0, squeeze=True)
+        params = pd.read_csv('circulation.csv', index_col=0, header=None, squeeze=True)
         call_cardio(args, params)
 
     elif model == "dkd":

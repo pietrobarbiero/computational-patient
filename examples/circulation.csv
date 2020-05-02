@@ -38,7 +38,7 @@ Csc,9.5
 Laop,0.003
 Laod,0.005
 Kc,1000
-Do	,50
+Do,50
 Vsa_o,210
 Vsa_max,250
 Kp1,0.03
@@ -156,7 +156,7 @@ PS,10
 Vcytox,2.1e-7
 Kcytox,1.0e-9
 P50_CO2,250
-alphaCO2,24*1.36e-6
+alphaCO2,3.264e-05
 RQ,0.8
 PH2O,47
 Vpcmax,200
@@ -177,11 +177,11 @@ CFb,6000
 CFt,5000
 Betab,0.036
 Betat,0.024
-O2cap,1.34/22400
+O2cap,5.982142857142858e-05
 Hbconc,150
 Cheme,0.00923
 HpNorm,1
-facid=0.01
+facid,0.01
 tweight,60
 tauHout,0.1
 PS_H,20

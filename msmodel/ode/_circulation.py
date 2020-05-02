@@ -1057,10 +1057,12 @@ def call_cardio(args, params, debug=False):
     Pra_list, Prv_list, Pla_list, Plv_list = [], [], [], []
     Vra_list, Vrv_list, Vla_list, Vlv_list = [], [], [], []
 
+    b_hrv = 1 - params.loc["a_hrv"]
+    b_hrs = 1 - params.loc["a_hrs"]
     F_con = params.loc["a_con"] + (params.loc["b_con"] / (np.exp(params.loc["tau_con"] * (N_con - params.loc["No_con"])) + 1.0))
     afs_con = params.loc["amin"] + (params.loc["Ka"] * F_con)
-    F_hrs = params.loc["a_hrs"] + (params.loc["b_hrs"] / (np.exp(params.loc["tau_hrs"] * (N_hrs - params.loc["No_hrs"])) + 1.0))
-    F_hrv = params.loc["a_hrv"] + (params.loc["b_hrv"] / (np.exp(params.loc["tau_hrv"] * (N_hrv - params.loc["No_hrv"])) + 1.0))
+    F_hrs = params.loc["a_hrs"] + (b_hrs / (np.exp(params.loc["tau_hrs"] * (N_hrs - params.loc["No_hrs"])) + 1.0))
+    F_hrv = params.loc["a_hrv"] + (b_hrv / (np.exp(params.loc["tau_hrv"] * (N_hrv - params.loc["No_hrv"])) + 1.0))
     HRcont = (params.loc["h1"] + (params.loc["h2"]*F_hrs)-(params.loc["h3"]*F_hrs**2)-(params.loc["h4"]*F_hrv)+ (params.loc["h5"]*F_hrv**2)-(params.loc["h6"]*F_hrv*F_hrs))
 
     trelv = t_meas[0] - tshift - params.loc["PRint"]
@@ -1082,7 +1084,8 @@ def call_cardio(args, params, debug=False):
     Ppcdc = Ppcd + Pplc
     Plvc = Plv + Ppcdc
     Erv = ((params.loc["Emaxrv"] - params.loc["Eminrv"]) * yrv) + params.loc["Eminrv"]
-    Prv = afs_con2 * (Vrv - params.loc["Vrvr"]) * Erv - params.loc["Px2"] * (1 / (np.exp(Vrv / params.loc["Vx8"]) - 1))
+    Vrvr = (1 - yrv) * (params.loc["Vrvrd"] - params.loc["Vrvrs"]) + params.loc["Vrvrs"]
+    Prv = afs_con2 * (Vrv - Vrvr) * Erv - params.loc["Px2"] * (1 / (np.exp(Vrv / params.loc["Vx8"]) - 1))
     Prvc = Prv + Ppcdc
 
     params_list = [[tshift], [HR], [HRcont], [afs_con],
@@ -1308,7 +1311,7 @@ def call_cardio(args, params, debug=False):
                     t_span=t_meas,
                     y0=y0,
                     args=ODE_args,
-                    t_eval=t_meas,
+                    # t_eval=t_meas[1:-2],
                     # first_step=0.02,
                     # rtol=1e-1, atol=1e-2,
                     method="LSODA")
