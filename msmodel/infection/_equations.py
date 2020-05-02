@@ -86,12 +86,11 @@ def mass_balance_ANG17(k_NEP, AngI_conc, k_ACE2, k_SARS, AngII_conc, h_ANGII, AN
 
 
 def blood_pressure_change(AngII_conc, ANG17_conc, t, sbp_spikes):
-    SSS_ANG2 = 0.0316
-    III_ANG17 = 0.0316
+    SSS_ANG2 = 0.01
+    III_ANG17 = 0.051
     sum_list = [
         sbp_spikes * np.sin(2 * np.pi * t / 24),
-        0.2 * (1 + SSS_ANG2 * AngII_conc),
-        -0.2 * (1 + III_ANG17 * ANG17_conc),
+        0.4 * (1 + SSS_ANG2 * AngII_conc - III_ANG17 * ANG17_conc),
         # - K_out_SBP * SBP,
     ]
     return sum(sum_list)

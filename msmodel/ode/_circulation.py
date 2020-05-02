@@ -27,6 +27,9 @@ def ODE(t, y,
         x, tHB, HP, tmeas, ABPmeas, PAFmeas, Nbr_list, Nbr_list_idx,
         # HRa, HRv, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave, af_con2,
         change_list,
+        t_list,
+        Pra_list, Prv_list, Pla_list, Plv_list,
+        Vra_list, Vrv_list, Vla_list, Vlv_list,
 
         # heart
         Ts1v, Ts1a, Ts2, offv,
@@ -77,7 +80,7 @@ def ODE(t, y,
     # set basic variables
     f_con = a_con + b_con / (np.exp(tau_con * (N_con - No_con)) + 1.0)
     af_con = amin + (Ka * f_con)
-    ABPshift = np.interp(t - offv, tmeas, ABPmeas)
+    ABPshift = np.interp(t - offv, tmeas, ABPmeas) # TODO: double check
 
     # triggers
     resultA = _trigger_A(t, tHB[n + 1], HP[n + 1], PRint, offv, Ts1a, Ts2)
@@ -227,6 +230,7 @@ def ODE(t, y,
     d_MAPmeas_dt = _mapmeas_change(ABPshift, MAPmeas, tauMAP)
     d_COmea_dt = _comea_change(PAFmeas[n], COmea, tauCO / to_min)  # TODO: check dims
     d_ABPfol_dt = _abp_change(ABPshift, ABPfol, tauABP)
+
     d_Nbr_dt = Nbr_t
     d_Nbr_t_dt = _firing_frequency(d_ABPfol_dt, Nbr_t, Nbr, ABPshift, a, a1, a2, K)
     d_N_con_dt = _n_change(t, tHB[0], l_con, N_con, K_con, Nbr_list, Nbr_list_idx, T_con)
@@ -238,7 +242,7 @@ def ODE(t, y,
         d_Vvc_dt, d_Paop_dt, d_AOFmod_dt, d_ABPfol_dt, d_COmea_dt,
         d_Vpap_dt, d_Vpad_dt, d_Vpa_dt, d_Vpc_dt, d_Vpv_dt, d_Fpap_dt, d_Fpad_dt,
         d_Vcorepi_dt, d_Vcorintra_dt, d_Vcorcap_dt, d_Vcorvn_dt,
-        d_Nbr_dt, d_Nbr_t_dt, d_N_con_dt, d_N_vaso_dt
+        d_Nbr_dt, d_Nbr_t_dt, d_N_con_dt, d_N_vaso_dt,
     ])
 
     # print(f"\t TBV[{TBV:.2f}]")
@@ -248,6 +252,18 @@ def ODE(t, y,
     if np.min(np.abs(t - tmeas)) < 1E-4:
         Nbr_list.append(Nbr)
         Nbr_list_idx.append(t)
+
+        t_list.append(t)
+
+        Pra_list.append(Pra)
+        Prv_list.append(Prv)
+        Pla_list.append(Pla)
+        Plv_list.append(Plv)
+
+        Vra_list.append(Vra)
+        Vrv_list.append(Vrv)
+        Vla_list.append(Vla)
+        Vlv_list.append(Vlv)
 
     change_list.append([HRa, HRv, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave, af_con2])
 
@@ -349,9 +365,51 @@ def call_cardio(args, params, debug=False):
     Nbr_list = []
     Nbr_list_idx = []
 
+    # age factor
+    tau = 100
+    t = np.linspace(0, 100, 100)
+    # x = 1 - t / tau * np.exp(-t / tau / 2) + t / tau * np.exp(-t / tau)
+    # x = 2 / (1 + np.exp(-1 / 8 * (t - 60)))
+    x = 1 / (1 + np.exp(1 / 10 * (t - 80)))
+
+    age_factor = np.interp(args.age, t, x)
+    angiotensin_factor = 0.9
+    factor = angiotensin_factor * age_factor
+
+    params.loc["Caop", "value"] = params.loc["Caop", "value"] * factor
+    params.loc["Caod", "value"] = params.loc["Caod", "value"] * factor
+    params.loc["Csap", "value"] = params.loc["Csap", "value"] * factor
+    params.loc["Csc", "value"] = params.loc["Csc", "value"] * factor
+    params.loc["Cpap", "value"] = params.loc["Cpap", "value"] * factor
+    params.loc["Cpad", "value"] = params.loc["Cpad", "value"] * factor
+    params.loc["Cpa", "value"] = params.loc["Cpa", "value"] * factor
+    params.loc["Cpc", "value"] = params.loc["Cpc", "value"] * factor
+    params.loc["Cpv", "value"] = params.loc["Cpv", "value"] * factor
+    params.loc["Ccorepi", "value"] = params.loc["Ccorepi", "value"] * factor
+    params.loc["Ccorintra", "value"] = params.loc["Ccorintra", "value"] * factor
+    params.loc["Ccorcap", "value"] = params.loc["Ccorcap", "value"] * factor
+    params.loc["Ccorvn", "value"] = params.loc["Ccorvn", "value"] * factor
+    params.loc["KElv", "value"] = params.loc["KElv", "value"] * factor
+    params.loc["KErv", "value"] = params.loc["KErv", "value"] * factor
+    params.loc["Emaxlv1", "value"] = params.loc["Emaxlv1", "value"] / factor
+    params.loc["Eminlv", "value"] = params.loc["Eminlv", "value"] / factor
+    params.loc["Emaxrv1", "value"] = params.loc["Emaxrv1", "value"] / factor
+    params.loc["Eminrv", "value"] = params.loc["Eminrv", "value"] / factor
+    params.loc["Emaxra", "value"] = params.loc["Emaxra", "value"] / factor
+    params.loc["Eminra", "value"] = params.loc["Eminra", "value"] / factor
+    params.loc["Emaxla", "value"] = params.loc["Emaxla", "value"] / factor
+    params.loc["Eminla", "value"] = params.loc["Eminla", "value"] / factor
+
+    t_list = []
+    Pra_list, Prv_list, Pla_list, Plv_list = [], [], [], []
+    Vra_list, Vrv_list, Vla_list, Vlv_list = [], [], [], []
+
     ODE_args = (
         x, tHB, HP, tmeas, ABPmeas, PAFmeas, Nbr_list, Nbr_list_idx,
         [[], [HRa, HRv, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave, af_con2]],
+        t_list,
+        Pra_list, Prv_list, Pla_list, Plv_list,
+        Vra_list, Vrv_list, Vla_list, Vlv_list,
 
         params.loc["Ts1v", "value"],
         params.loc["Ts1a", "value"],
@@ -488,7 +546,7 @@ def call_cardio(args, params, debug=False):
     )
 
     if not debug:
-        max_time_step = 8
+        max_time_step = 10
         sol = solve_ivp(fun=ODE,
                         t_span=[tHB[0], tHB[max_time_step]],
                         y0=y0,
@@ -511,25 +569,14 @@ def call_cardio(args, params, debug=False):
         y_df.columns = cols
         y_df.to_csv("cardio_y.csv")
 
-    y_df = pd.read_csv("cardio_y.csv")
+        pv_lists = [t_list, Pra_list, Prv_list, Pla_list, Plv_list, Vra_list, Vrv_list, Vla_list, Vlv_list]
+        pv_cols = ["t", "Pra", "Prv", "Pla", "Plv", "Vra", "Vrv", "Vla", "Vlv"]
+        pv_df = pd.DataFrame.from_records(pv_lists).T
+        pv_df.columns = pv_cols
 
-    tmax = 300
-    plt.figure()
-    plt.subplot(411)
-    plt.title("Right Atrium Blood Volume [ml]")
-    plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 2])
-    plt.subplot(412)
-    plt.title("Right Ventricle Blood Volume [ml]")
-    plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 3])
-    plt.subplot(413)
-    plt.title("Left Atrium Blood Volume [ml]")
-    plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 4])
-    plt.subplot(414)
-    plt.title("Left Ventricle Blood Volume [ml]")
-    plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 5])
-    plt.xlabel("t [sec]")
-    plt.tight_layout()
-    plt.savefig("volumes.png")
-    plt.show()
+        output_dir = f"data/drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}_age-{args.age}"
+        if not os.path.isdir(output_dir):
+            os.makedirs(output_dir)
+        pv_df.to_csv(os.path.join(output_dir, "pv.csv"))
 
     return

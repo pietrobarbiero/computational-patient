@@ -1,6 +1,7 @@
 import os
 import pickle
 import sys
+import pandas as pd
 
 import numpy as np
 import matplotlib.pyplot as plt
@@ -39,76 +40,86 @@ def make_plots(t, y1_list, y2_list, y_d_list, args_list, plot_dir, pressure_list
     plt.savefig(os.path.join(plot_dir, "./diacid.png"))
     plt.show()
 
-    # f = plt.figure(figsize=[10, 10])
-    #
-    # plt.subplot(311)
-    # for i in range(0, len(y1_list)):
-    #     plt.plot(t, y1_list[i], label="ANG-II - " + labels[i])
-    # plt.xlim([0, np.ceil(t[-1])])
-    # plt.ylim([1e-3, 1e3])
-    # plt.xlabel("t (days)")
-    # plt.ylabel("Conc. (nmol/L) (ng/mL)")
-    # f.axes[0].ticklabel_format(style='plain')
-    # f.axes[0].set_yscale('log')
-    # plt.legend()
-    #
-    # plt.subplot(312)
-    # for i in range(0, len(y2_list)):
-    #     plt.plot(t, y2_list[i], label="ANG-(1-7) - " + labels[i])
-    # plt.xlim([0, np.ceil(t[-1])])
-    # plt.ylim([1e0, 1e1])
-    # plt.xlabel("t (days)")
-    # plt.ylabel("Conc. (nmol/L) (ng/mL)")
-    # f.axes[1].ticklabel_format(style='plain')
-    # f.axes[1].set_yscale('log')
-    # plt.legend()
-    #
-    # plt.subplot(313)
-    # for i in range(0, len(pressure_list)):
-    #     plt.plot(t, pressure_list[i], label="SBP - " + labels[i])
-    # plt.xlim([0, np.ceil(t[-1])])
-    # plt.ylim([100, 200])
-    # plt.xlabel("t (days)")
-    # plt.ylabel("pressure (mmHg)")
-    # plt.legend()
-    #
-    # plt.tight_layout()
-    # plt.savefig(os.path.join(plot_dir, "./ANG.png"))
-    # plt.show()
-
     return
 
 
 def main():
 
-    plot_dir = "./plots/"
+    plot_dir = "plots/"
     if not os.path.isdir(plot_dir):
         os.makedirs(plot_dir)
 
-    out_dir = "./data/"
+    out_dir = "data/"
+    data = []
+    labels = []
     for entry in os.listdir(out_dir):
         par_dir = os.path.join(out_dir, entry)
         if os.path.isdir(par_dir):
-            params_list = []
-            angII = []
-            ang17 = []
-            diacid = []
-            sbp = []
             for file in os.listdir(par_dir):
                 f1 = os.path.join(par_dir, file)
-                vars = pickle.load(open(f1, 'rb'))
-                params_list.append(vars["params"])
-                angII.append(vars["angII"])
-                ang17.append(vars["ang17"])
-                sbp.append(vars["sbp"])
-                diacid.append(vars["diacid"])
-            t = vars["t"]
+                y_df = pd.read_csv(f1)
+                data.append(y_df)
+                labels.append(par_dir)
 
             plot_sub_dir = os.path.join(plot_dir, entry.split("/")[-1])
             if not os.path.isdir(plot_sub_dir):
                 os.makedirs(plot_sub_dir)
 
-            make_plots(t, angII, ang17, diacid, params_list, plot_sub_dir, sbp)
+            # make_plots(t, angII, ang17, diacid, params_list, plot_sub_dir, sbp)
+
+    plt.figure()
+    plt.subplot(221)
+    plt.title("Right Atrium")
+    for y_df, l in zip(data, labels):
+        plt.scatter(y_df["Vra"], y_df["Pra"], label=l)
+    plt.ylabel("pressure [mmHg]")
+    # plt.legend()
+    plt.subplot(222)
+    plt.title("Left Atrium")
+    for y_df in data:
+        plt.scatter(y_df["Vla"], y_df["Pla"])
+    plt.subplot(223)
+    plt.title("Right Ventricle")
+    for y_df in data:
+        plt.scatter(y_df["Vrv"], y_df["Prv"])
+    plt.xlabel("volume [ml]")
+    plt.ylabel("pressure [mmHg]")
+    plt.subplot(224)
+    plt.title("Left Ventricle")
+    for y_df in data:
+        plt.scatter(y_df["Vlv"], y_df["Plv"])
+    plt.xlabel("volume [ml]")
+    plt.tight_layout()
+    plt.savefig(os.path.join(plot_dir, "phases.png"))
+    plt.show()
+
+    tau = 100
+    t = np.linspace(0, 100, 100)
+    x = 1 - t/tau*np.exp(-t/tau/2) + t/tau*np.exp(-t/tau)
+    x = 1 / (1 + np.exp(1/10*(t - 80)))
+    plt.figure()
+    plt.plot(t, x)
+    plt.show()
+
+            #
+            # tmax = 300
+            # plt.figure(figsize=[10,10])
+            # plt.subplot(411)
+            # plt.title("Right Atrium Blood Volume [ml]")
+            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 2])
+            # plt.subplot(412)
+            # plt.title("Right Ventricle Blood Volume [ml]")
+            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 3])
+            # plt.subplot(413)
+            # plt.title("Left Atrium Blood Volume [ml]")
+            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 4])
+            # plt.subplot(414)
+            # plt.title("Left Ventricle Blood Volume [ml]")
+            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 5])
+            # plt.xlabel("t [sec]")
+            # plt.tight_layout()
+            # plt.savefig("volumes.png")
+            # plt.show()
 
     return
 

@@ -12,8 +12,10 @@ def load_configuration() -> argparse.Namespace:
     h = 24
 
     parser = argparse.ArgumentParser()
+    parser.add_argument("--age", help="Patient age (years).",
+                        default=20, required=False, type=int)
     parser.add_argument("--infection", help="Whether the patient has a SARS infection or not.",
-                        default=False, required=False, type=bool)
+                        default=True, required=False, type=bool)
     parser.add_argument("--dose", help="Drug dose (mg). 5 is nominal dose for Benazepril and 1.25 for Cilazapril.",
                         default=0, required=False, type=int)
     parser.add_argument("--n-dose", help="Number of doses per day (cannot be zero).", default=1, required=False,
