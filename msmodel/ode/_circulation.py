@@ -1,9 +1,11 @@
 import os
+import pickle
 
 import numpy as np
 from scipy.integrate import solve_ivp
 import pandas as pd
 import matplotlib.pyplot as plt
+from sklearn.preprocessing import MinMaxScaler
 
 from ..circulation._baroreceptor import _f, _b_vaso, _firing_frequency, _n_change
 from ..circulation._blood import _total_blood_volume, _heart_volume, _coronary_volume, _systemic_arterial_volume, \
@@ -271,6 +273,19 @@ def ODE(t, y,
 
 
 def call_cardio(args, params, debug=False):
+    out_dir = f"./data/{args.age}"
+    file_name = f"CARDIO_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
+    file = os.path.join(out_dir, file_name)
+    if os.path.isfile(file):
+        return
+
+    file_name = f"DKD_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
+    vars = pickle.load(open(os.path.join(out_dir, file_name), 'rb'))
+    # ang17_avg = 22
+    # angII_avg = 20
+    # ang_diff = ang17_avg - angII_avg
+    # ang_ratio = np.mean(vars["ang17"]) / np.mean(vars["angII"])
+    ang_ratio = 1.08
 
     # load input data
     abp_df = pd.read_csv("cardiacdata2.csv")
@@ -281,6 +296,44 @@ def call_cardio(args, params, debug=False):
     tmeas = abp_df["x"].values
     tm = np.arange(tHB[0], tHB[-1], 0.02)
     ABPmeas = abp_df["ABP"].values
+
+    # age factor
+    # tau = 100
+    # x = 1 - t / tau * np.exp(-t / tau / 2) + t / tau * np.exp(-t / tau)
+    # x = 2 / (1 + np.exp(-1 / 8 * (t - 60)))
+    age_span = np.linspace(0, 100, 100)
+    age_damage = 1 / (1 + np.exp(1 / 10 * (age_span - 80)))
+    age_factor = np.interp(args.age, age_span, age_damage)
+    angiotensin_factor = (np.mean(vars["ang17"]) / np.mean(vars["angII"])) / ang_ratio
+    factor = angiotensin_factor * age_factor
+
+    x_max = np.max(ABPmeas) + (1 - factor) * np.max(ABPmeas)
+    x_min = np.min(ABPmeas) - (1 - factor) * np.min(ABPmeas)
+    scaler = MinMaxScaler((x_min, x_max))
+    ABPmeas = scaler.fit_transform(ABPmeas.reshape(-1, 1)).squeeze()
+    params.loc["Caop", "value"] = params.loc["Caop", "value"] * factor
+    params.loc["Caod", "value"] = params.loc["Caod", "value"] * factor
+    params.loc["Csap", "value"] = params.loc["Csap", "value"] * factor
+    params.loc["Csc", "value"] = params.loc["Csc", "value"] * factor
+    params.loc["Cpap", "value"] = params.loc["Cpap", "value"] * factor
+    params.loc["Cpad", "value"] = params.loc["Cpad", "value"] * factor
+    params.loc["Cpa", "value"] = params.loc["Cpa", "value"] * factor
+    params.loc["Cpc", "value"] = params.loc["Cpc", "value"] * factor
+    params.loc["Cpv", "value"] = params.loc["Cpv", "value"] * factor
+    params.loc["Ccorepi", "value"] = params.loc["Ccorepi", "value"] * factor
+    params.loc["Ccorintra", "value"] = params.loc["Ccorintra", "value"] * factor
+    params.loc["Ccorcap", "value"] = params.loc["Ccorcap", "value"] * factor
+    params.loc["Ccorvn", "value"] = params.loc["Ccorvn", "value"] * factor
+    params.loc["KElv", "value"] = params.loc["KElv", "value"] * factor
+    params.loc["KErv", "value"] = params.loc["KErv", "value"] * factor
+    params.loc["Emaxlv1", "value"] = params.loc["Emaxlv1", "value"] / factor
+    params.loc["Eminlv", "value"] = params.loc["Eminlv", "value"] / factor
+    params.loc["Emaxrv1", "value"] = params.loc["Emaxrv1", "value"] / factor
+    params.loc["Eminrv", "value"] = params.loc["Eminrv", "value"] / factor
+    params.loc["Emaxra", "value"] = params.loc["Emaxra", "value"] / factor
+    params.loc["Eminra", "value"] = params.loc["Eminra", "value"] / factor
+    params.loc["Emaxla", "value"] = params.loc["Emaxla", "value"] / factor
+    params.loc["Eminla", "value"] = params.loc["Eminla", "value"] / factor
 
     # derive initial values
     ABPshift = np.interp(np.min(tHB), tmeas, ABPmeas)
@@ -364,41 +417,6 @@ def call_cardio(args, params, debug=False):
 
     Nbr_list = []
     Nbr_list_idx = []
-
-    # age factor
-    tau = 100
-    t = np.linspace(0, 100, 100)
-    # x = 1 - t / tau * np.exp(-t / tau / 2) + t / tau * np.exp(-t / tau)
-    # x = 2 / (1 + np.exp(-1 / 8 * (t - 60)))
-    x = 1 / (1 + np.exp(1 / 10 * (t - 80)))
-
-    age_factor = np.interp(args.age, t, x)
-    angiotensin_factor = 0.9
-    factor = angiotensin_factor * age_factor
-
-    params.loc["Caop", "value"] = params.loc["Caop", "value"] * factor
-    params.loc["Caod", "value"] = params.loc["Caod", "value"] * factor
-    params.loc["Csap", "value"] = params.loc["Csap", "value"] * factor
-    params.loc["Csc", "value"] = params.loc["Csc", "value"] * factor
-    params.loc["Cpap", "value"] = params.loc["Cpap", "value"] * factor
-    params.loc["Cpad", "value"] = params.loc["Cpad", "value"] * factor
-    params.loc["Cpa", "value"] = params.loc["Cpa", "value"] * factor
-    params.loc["Cpc", "value"] = params.loc["Cpc", "value"] * factor
-    params.loc["Cpv", "value"] = params.loc["Cpv", "value"] * factor
-    params.loc["Ccorepi", "value"] = params.loc["Ccorepi", "value"] * factor
-    params.loc["Ccorintra", "value"] = params.loc["Ccorintra", "value"] * factor
-    params.loc["Ccorcap", "value"] = params.loc["Ccorcap", "value"] * factor
-    params.loc["Ccorvn", "value"] = params.loc["Ccorvn", "value"] * factor
-    params.loc["KElv", "value"] = params.loc["KElv", "value"] * factor
-    params.loc["KErv", "value"] = params.loc["KErv", "value"] * factor
-    params.loc["Emaxlv1", "value"] = params.loc["Emaxlv1", "value"] / factor
-    params.loc["Eminlv", "value"] = params.loc["Eminlv", "value"] / factor
-    params.loc["Emaxrv1", "value"] = params.loc["Emaxrv1", "value"] / factor
-    params.loc["Eminrv", "value"] = params.loc["Eminrv", "value"] / factor
-    params.loc["Emaxra", "value"] = params.loc["Emaxra", "value"] / factor
-    params.loc["Eminra", "value"] = params.loc["Eminra", "value"] / factor
-    params.loc["Emaxla", "value"] = params.loc["Emaxla", "value"] / factor
-    params.loc["Eminla", "value"] = params.loc["Eminla", "value"] / factor
 
     t_list = []
     Pra_list, Prv_list, Pla_list, Plv_list = [], [], [], []
@@ -574,9 +592,9 @@ def call_cardio(args, params, debug=False):
         pv_df = pd.DataFrame.from_records(pv_lists).T
         pv_df.columns = pv_cols
 
-        output_dir = f"data/drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}_age-{args.age}"
+        output_dir = f"data/{args.age}"
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
-        pv_df.to_csv(os.path.join(output_dir, "pv.csv"))
+        pv_df.to_csv(os.path.join(output_dir, f"CARDIO_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"))
 
     return

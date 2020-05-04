@@ -56,10 +56,11 @@ def main():
         par_dir = os.path.join(out_dir, entry)
         if os.path.isdir(par_dir):
             for file in os.listdir(par_dir):
-                f1 = os.path.join(par_dir, file)
-                y_df = pd.read_csv(f1)
-                data.append(y_df)
-                labels.append(par_dir)
+                if file.endswith(".csv"):
+                    f1 = os.path.join(par_dir, file)
+                    y_df = pd.read_csv(f1)
+                    data.append(y_df)
+                    labels.append(par_dir)
 
             plot_sub_dir = os.path.join(plot_dir, entry.split("/")[-1])
             if not os.path.isdir(plot_sub_dir):
@@ -67,39 +68,52 @@ def main():
 
             # make_plots(t, angII, ang17, diacid, params_list, plot_sub_dir, sbp)
 
-    plt.figure()
+    plt.figure(figsize=[8,8])
+    labels = ["infected", "normal"]
+
     plt.subplot(221)
     plt.title("Right Atrium")
-    for y_df, l in zip(data, labels):
-        plt.scatter(y_df["Vra"], y_df["Pra"], label=l)
+    for y_df in data:
+        plt.scatter(y_df["Vra"], y_df["Pra"])
     plt.ylabel("pressure [mmHg]")
-    # plt.legend()
+    # plt.xlim([70, 110])
+    # plt.ylim([1, 6])
+
     plt.subplot(222)
     plt.title("Left Atrium")
     for y_df in data:
         plt.scatter(y_df["Vla"], y_df["Pla"])
+    # plt.xlim([55, 105])
+    # plt.ylim([4.5, 8])
+
     plt.subplot(223)
     plt.title("Right Ventricle")
     for y_df in data:
         plt.scatter(y_df["Vrv"], y_df["Prv"])
     plt.xlabel("volume [ml]")
     plt.ylabel("pressure [mmHg]")
-    plt.subplot(224)
+    # plt.xlim([90, 190])
+    # plt.ylim([0, 35])
+
+    ax = plt.subplot(224)
     plt.title("Left Ventricle")
     for y_df in data:
         plt.scatter(y_df["Vlv"], y_df["Plv"])
     plt.xlabel("volume [ml]")
+    # plt.xlim([40, 140])
+    # plt.ylim([0, 160])
+
     plt.tight_layout()
     plt.savefig(os.path.join(plot_dir, "phases.png"))
     plt.show()
 
-    tau = 100
-    t = np.linspace(0, 100, 100)
-    x = 1 - t/tau*np.exp(-t/tau/2) + t/tau*np.exp(-t/tau)
-    x = 1 / (1 + np.exp(1/10*(t - 80)))
-    plt.figure()
-    plt.plot(t, x)
-    plt.show()
+    # tau = 100
+    # t = np.linspace(0, 100, 100)
+    # x = 1 - t/tau*np.exp(-t/tau/2) + t/tau*np.exp(-t/tau)
+    # x = 1 / (1 + np.exp(1/10*(t - 80)))
+    # plt.figure()
+    # plt.plot(t, x)
+    # plt.show()
 
             #
             # tmax = 300

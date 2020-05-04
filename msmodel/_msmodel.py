@@ -21,6 +21,9 @@ def covid19_dkd_model(model="infection"):
         params = scipy.io.loadmat(params_file)
         call_infection(args, params)
 
+        cardio_params = pd.read_csv('circulation.csv', index_col=0, squeeze=True)
+        call_cardio(args, cardio_params)
+
     if model == "hypertension":
         call_hypertension(args)
 

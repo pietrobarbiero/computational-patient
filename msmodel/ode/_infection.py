@@ -216,6 +216,12 @@ def local_RAS_model(coefficients, drug_dose, tau,
 
 
 def call_infection(args, params):
+    out_dir = f"./data/{args.age}"
+    file_name = f"DKD_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
+    file = os.path.join(out_dir, file_name)
+    if os.path.isfile(file):
+        return
+
     # compute dependent parameters
     drug_dose = args.dose * 1e6
     pill_mg = args.dose * 1e-6
@@ -305,13 +311,10 @@ def call_infection(args, params):
         "sbp": SBP,
     }
     dose = str(args.dose).replace(".", "-")
-    out_dir = "_".join(["./data/" + args.drug_name,
-                        dose,
-                        str(args.n_dose),
-                        str(args.glu)])
+    out_dir = f"./data/{args.age}"
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
-    file_name = f"{args.renal_function}.dat"
+    file_name = f"DKD_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
     pickle.dump(save_var, open(os.path.join(out_dir, file_name), 'wb'))
 
     return solution
