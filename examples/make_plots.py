@@ -1,6 +1,8 @@
 import os
 import pickle
 import sys
+
+import matplotlib
 import pandas as pd
 
 import numpy as np
@@ -8,132 +10,194 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 
 
-def make_plots(t, y1_list, y2_list, y_d_list, args_list, plot_dir, pressure_list):
-    labels = []
-    for i in range(0, len(args_list)):
-        labels.append(f"{args_list[i].renal_function}")
+def make_plot(dicts, y_str, plot_dir):
 
-    f = plt.figure(figsize=[5, 5])
+    t = dicts["t"]
+    y = dicts[y_str][y_str]
+    y = pd.DataFrame(y, columns=[y_str])
+    data = pd.concat([t, y], axis=1)
+    data.sort_values(by=["subjects", "t"])
+    std = data.iloc[:, -1].std() / 10
+    for i, subject in enumerate(set(data["subjects"])):
+        data.loc[data["subjects"] == subject, data.columns[-1]] -= (i + std)
 
-    plt.subplot(211)
-    plt.title(f"Drug concentration [{args_list[0].dose:.2f} mg/die]")
-    for i in range(0, len(y_d_list)):
-        plt.plot(t, y_d_list[i], label=labels[i])
-    f.axes[0].ticklabel_format(style='plain')
-    plt.xlim([0, np.ceil(t[-1])])
-    plt.ylim([0, 100])
-    # plt.xlabel("t (days)")
+
+    plt.figure(figsize=[5, 3])
+    g = sns.lineplot(x="t", y=y_str, data=data, hue="subjects",
+                 hue_order=["C0", "C1", "C2", "C3", "C4", "C5"])
+    sns.despine(left=True, bottom=True)
+    # g.axes.set_yscale('log')
+    # g.axes.grid(True)
+    plt.title(y_str.upper())
     plt.ylabel("ng/mL")
-    plt.legend()
-
-    plt.subplot(212)
-    plt.title("Sistolic blood pressure")
-    for i in range(0, len(pressure_list)):
-        plt.plot(t, pressure_list[i], label=labels[i])
-    plt.xlim([0, np.ceil(t[-1])])
-    plt.ylim([100, 200])
-    plt.xlabel("t (days)")
-    plt.ylabel("mmHg")
-    # plt.legend()
-
+    plt.legend(loc='center left', bbox_to_anchor=(1, 0.5))
     plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, "./diacid.png"))
+    plt.savefig(f"{plot_dir}/{y_str}.png")
+    plt.savefig(f"{plot_dir}/{y_str}.pdf")
     plt.show()
-
     return
 
 
-def main():
+def make_box_plot(dicts, measure, plot_dir, title, ylabel):
+    sns.set_style("whitegrid")
+    plt.figure(figsize=[5, 3])
+    data = dicts[measure].sort_values(by="subjects")
+    plt.title(title)
+    sns.boxplot(x="subjects", y=measure, data=data)
+    sns.despine(left=True, bottom=True)
+    plt.ylabel(ylabel)
+    plt.tight_layout()
+    plt.savefig(f"{plot_dir}/{measure}.png")
+    plt.savefig(f"{plot_dir}/{measure}.pdf")
+    plt.show()
 
-    plot_dir = "plots/"
-    if not os.path.isdir(plot_dir):
-        os.makedirs(plot_dir)
 
-    out_dir = "data/"
+def make_lineplot(dicts, measure, plot_dir, title, ylabel):
+    mask1 = (dicts[measure]["infection"] == "0") & (dicts[measure]["glucose"] == "5") & (dicts[measure]["dose"] == "0")
+    mask2 = (dicts[measure]["infection"] == "1") & (dicts[measure]["glucose"] == "25") & (dicts[measure]["dose"] == "0")
+    mask3 = (dicts[measure]["infection"] == "1") & (dicts[measure]["glucose"] == "25") & (dicts[measure]["dose"] == "5")
+
+    L = dicts[measure]["infection"] + dicts[measure]["glucose"] + dicts[measure]["dose"]
+    L.name = "L"
+
+    data = pd.concat([dicts[measure], L], axis=1)
+
+    sns.set_style("whitegrid")
+    plt.figure(figsize=[5, 3])
+    plt.title(title)
+    lab = list(set(L))
+    lab.sort()
+    for i in lab:
+        g = sns.lineplot(x="age", y=measure, data=data[data["L"] == i], ci=99)
+    sns.despine(left=True, bottom=True)
+    plt.xlabel("age")
+    plt.ylabel(ylabel)
+    plt.legend(["H", "I", "T"], loc='center left', bbox_to_anchor=(1, 0.5))
+    # g.axes.grid(False)
+    plt.tight_layout()
+    plt.savefig(f"{plot_dir}/{measure}_aging.png")
+    plt.savefig(f"{plot_dir}/{measure}_aging.pdf")
+    plt.show()
+
+
+def search_data(out_dir, file_type):
     data = []
     labels = []
     for entry in os.listdir(out_dir):
         par_dir = os.path.join(out_dir, entry)
         if os.path.isdir(par_dir):
             for file in os.listdir(par_dir):
-                if file.endswith(".csv"):
+                if file.startswith(file_type):
                     f1 = os.path.join(par_dir, file)
                     y_df = pd.read_csv(f1)
                     data.append(y_df)
-                    labels.append(par_dir)
+                    labels.append(f1)
 
-            plot_sub_dir = os.path.join(plot_dir, entry.split("/")[-1])
-            if not os.path.isdir(plot_sub_dir):
-                os.makedirs(plot_sub_dir)
+    label_list = []
+    for l in labels:
+        age = int(l.split("/")[1])
+        drug_dose = int(l.split("/")[2].split("_")[1].split("-")[1])
+        glucose = float(l.split("/")[2].split("_")[2].split("-")[1])
+        infection = int(l.split("/")[2].split("_")[3].split("-")[1])
+        renal = l.split("/")[2].split("_")[4].split("-")[1][:-4]
+        if age == 20:
+            new_label = "C0"
+        elif age == 60 and glucose == 5 and infection == 0 and drug_dose == 0:
+            new_label = "C1"
+        elif age == 60 and glucose == 5 and infection == 0 and drug_dose == 5:
+            new_label = "C2"
+        elif age == 60 and glucose == 25 and infection == 0 and drug_dose == 5:
+            new_label = "C3"
+        elif age == 60 and glucose == 5 and infection == 1 and drug_dose == 5:
+            new_label = "C4"
+        elif age == 60 and glucose == 25 and infection == 1 and drug_dose == 5:
+            new_label = "C5"
+        label_list.append(new_label)
+    df_label = pd.DataFrame(label_list)
 
-            # make_plots(t, angII, ang17, diacid, params_list, plot_sub_dir, sbp)
+    columns = data[0].columns
+    dicts = {}
+    for c in columns:
+        dicts[c] = pd.DataFrame()
+        for d, l in zip(data, df_label.values):
+            label_list = [l[0] for i in d.iterrows()]
+            df = pd.concat([d.loc[:, c], pd.DataFrame(label_list, columns=["subjects"])], axis=1)
+            dicts[c] = pd.concat([dicts[c], df])
 
-    plt.figure(figsize=[8,8])
-    labels = ["infected", "normal"]
+    return dicts
 
-    plt.subplot(221)
-    plt.title("Right Atrium")
-    for y_df in data:
-        plt.scatter(y_df["Vra"], y_df["Pra"])
-    plt.ylabel("pressure [mmHg]")
-    # plt.xlim([70, 110])
-    # plt.ylim([1, 6])
 
-    plt.subplot(222)
-    plt.title("Left Atrium")
-    for y_df in data:
-        plt.scatter(y_df["Vla"], y_df["Pla"])
-    # plt.xlim([55, 105])
-    # plt.ylim([4.5, 8])
+def search_data_aging(out_dir, file_type):
+    data = []
+    labels = []
+    for entry in os.listdir(out_dir):
+        par_dir = os.path.join(out_dir, entry)
+        if os.path.isdir(par_dir):
+            for file in os.listdir(par_dir):
+                if file.startswith(file_type):
+                    f1 = os.path.join(par_dir, file)
+                    y_df = pd.read_csv(f1)
+                    data.append(y_df)
+                    labels.append(f1)
 
-    plt.subplot(223)
-    plt.title("Right Ventricle")
-    for y_df in data:
-        plt.scatter(y_df["Vrv"], y_df["Prv"])
-    plt.xlabel("volume [ml]")
-    plt.ylabel("pressure [mmHg]")
-    # plt.xlim([90, 190])
-    # plt.ylim([0, 35])
+    label_list = []
+    for l in labels:
+        age = l.split("/")[1]
+        drug_dose = l.split("/")[2].split("_")[1].split("-")[1]
+        glucose = l.split("/")[2].split("_")[2].split("-")[1][:-2]
+        infection = l.split("/")[2].split("_")[3].split("-")[1]
+        renal = l.split("/")[2].split("_")[4].split("-")[1][:-4]
+        label_list.append([age, drug_dose, glucose, infection, renal])
+    df_label = pd.DataFrame(label_list)
 
-    ax = plt.subplot(224)
-    plt.title("Left Ventricle")
-    for y_df in data:
-        plt.scatter(y_df["Vlv"], y_df["Plv"])
-    plt.xlabel("volume [ml]")
-    # plt.xlim([40, 140])
-    # plt.ylim([0, 160])
+    columns = data[0].columns
+    dicts = {}
+    for c in columns:
+        dicts[c] = pd.DataFrame()
+        for d, l in zip(data, df_label.values):
+            label_list = pd.DataFrame([l for i in d.iterrows()], columns=["age", "dose", "glucose", "infection", "renal"])
+            df = pd.concat([d.loc[:, c], label_list], axis=1)
+            dicts[c] = pd.concat([dicts[c], df])
 
-    plt.tight_layout()
-    plt.savefig(os.path.join(plot_dir, "phases.png"))
-    plt.show()
+    return dicts
 
-    # tau = 100
-    # t = np.linspace(0, 100, 100)
-    # x = 1 - t/tau*np.exp(-t/tau/2) + t/tau*np.exp(-t/tau)
-    # x = 1 / (1 + np.exp(1/10*(t - 80)))
-    # plt.figure()
-    # plt.plot(t, x)
-    # plt.show()
 
-            #
-            # tmax = 300
-            # plt.figure(figsize=[10,10])
-            # plt.subplot(411)
-            # plt.title("Right Atrium Blood Volume [ml]")
-            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 2])
-            # plt.subplot(412)
-            # plt.title("Right Ventricle Blood Volume [ml]")
-            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 3])
-            # plt.subplot(413)
-            # plt.title("Left Atrium Blood Volume [ml]")
-            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 4])
-            # plt.subplot(414)
-            # plt.title("Left Ventricle Blood Volume [ml]")
-            # plt.plot(y_df.iloc[:tmax, 1], y_df.iloc[:tmax, 5])
-            # plt.xlabel("t [sec]")
-            # plt.tight_layout()
-            # plt.savefig("volumes.png")
-            # plt.show()
+def main():
+
+    aging = True
+    out_dir = "data/"
+    plot_dir = "plots/"
+    if not os.path.isdir(plot_dir):
+        os.makedirs(plot_dir)
+
+    if aging:
+        dicts = search_data_aging(out_dir, "CARDIO")
+        make_lineplot(dicts, "Ppap", plot_dir, "Proximal pulmonary artery", "pressure [mmHg]")
+        make_lineplot(dicts, "Ppad", plot_dir, "Distal pulmonary artery", "pressure [mmHg]")
+        make_lineplot(dicts, "Ppa", plot_dir, "Pulmonary arterioles", "pressure [mmHg]")
+        make_lineplot(dicts, "Ppc", plot_dir, "Pulmonary capillaries", "pressure [mmHg]")
+        make_lineplot(dicts, "Psa", plot_dir, "Systemic arteries", "pressure [mmHg]")
+        make_lineplot(dicts, "Psap", plot_dir, "Systemic arterioles", "pressure [mmHg]")
+        make_lineplot(dicts, "Psc", plot_dir, "Systemic capillaries", "pressure [mmHg]")
+        make_lineplot(dicts, "Psv", plot_dir, "Systemic veins", "pressure [mmHg]")
+
+
+    else:
+        dicts = search_data(out_dir, "DKD")
+        make_plot(dicts, "diacid", plot_dir)
+        make_plot(dicts, "ang17", plot_dir)
+        make_plot(dicts, "at1r", plot_dir)
+        make_plot(dicts, "at2r", plot_dir)
+
+        # dicts = search_data(out_dir, "CARDIO")
+        # make_box_plot(dicts, "Ppap", plot_dir, "Proximal pulmonary artery", "pressure [mmHg]")
+        # make_box_plot(dicts, "Ppad", plot_dir, "Distal pulmonary artery", "pressure [mmHg]")
+        # make_box_plot(dicts, "Ppa", plot_dir, "Pulmonary arterioles", "pressure [mmHg]")
+        # make_box_plot(dicts, "Ppc", plot_dir, "Pulmonary capillaries", "pressure [mmHg]")
+        # make_box_plot(dicts, "Psa", plot_dir, "Systemic arteries", "pressure [mmHg]")
+        # make_box_plot(dicts, "Psap", plot_dir, "Systemic arterioles", "pressure [mmHg]")
+        # make_box_plot(dicts, "Psc", plot_dir, "Systemic capillaries", "pressure [mmHg]")
+        # make_box_plot(dicts, "Psv", plot_dir, "Systemic veins", "pressure [mmHg]")
 
     return
 

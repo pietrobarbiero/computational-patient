@@ -5,9 +5,10 @@ from scipy.integrate import solve_ivp
 import numpy as np
 import scipy.io
 import matplotlib.pyplot as plt
+from pandas import DataFrame
 
 from ..infection._equations import mass_balance_AngI_infection, mass_balance_AngII_infection, mass_balance_ANG17, \
-    blood_pressure_change
+    mass_balance_ATR
 from ..pd import GLU, mass_balance_AGT, mass_balance_Renin, mass_balance_AngI, mass_balance_AngII
 from ..pk import analytical_PK
 
@@ -20,10 +21,12 @@ def ODE(t, conc, drugdose, ke_diacid,
         baseline_prod_Renin,
         k_degr_Renin, k_degr_AngI, k_degr_AGT,
         tstart_dosing, glu,
-        sbp_spikes, k_SARS):
+        c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
+        k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
+        h_ANGII, h_ANG17, h_ATR):
 
     # Input concentration vector conc contains species AngI, AngII & Renin
-    AngI_conc, AngII_conc, Renin_conc, AGT_conc, ANG17_conc, SBP = conc
+    AngI_conc, AngII_conc, Renin_conc, AGT_conc, ANG17_conc, AT1R_conc, AT2R_conc = conc
 
     # PK model explicit functions
     diacid_conc = analytical_PK(drugdose,
@@ -37,46 +40,10 @@ def ODE(t, conc, drugdose, ke_diacid,
 
     Inhibition = (100 * (diacid_conc ** n_Hill)) / (diacid_conc ** n_Hill + C50 ** n_Hill)
 
-    # Glucose-dependent rate params for enzymatic/binding reactions
-    # from Pilvankar et. al 2018 from Approach 1
-    Rate_params = np.array([
-        1.527482117056147e-07,
-        1.705688364046031e-05,
-        2.472978807773762e-04,
-        4.533794480918563e-03,
-        7.072930413876994e-04,
-        1.296703909210782e-02
-    ])
-
-    # Units conversion:
-    # c_X_a: (L/mmol/s) to (L/mmol/hr)
-    # c_X_b: (1/s) to (1/hr)
-    c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b = Rate_params * 3600
-
-    # # TODO: double check
-    # c_Renin_b = 6.16e10-11
-    # c_ACE_b = 163
-    # c_AT1_b = 464
-
     # Glucose-dependent rate params
     c_Renin = c_Renin_a * GLU(t, glu) + c_Renin_b
     c_ACE = c_ACE_a * GLU(t, glu) + c_ACE_b
     c_AT1 = c_AT1_a * GLU(t, glu) + c_AT1_b
-
-    # Non-Glucose-dependent rate constants for enzymatic/binding reactions
-    # from Pilvankar et. al 2018 from Approach 1
-    Rate_cons = np.array([
-        1.210256981930063e-02,
-        1.069671574938187e-04,
-        6.968146259597334e-03,
-        1.628277841850352e-04,
-        6.313823632053240E+02
-    ])
-    # Units converted from
-    # k_APA, k_ACE2, k_AT2, k_NEP: from (1/s) to (1/hr)
-    # k_AGT: from (nmol/L/s) to (umol/L/hr)
-    k_APA, k_ACE2, k_AT2, k_NEP, k_AGT = Rate_cons * 3600
-    h_ANGII = 18 / 3600  # from (s) to (hr)
 
     # mass balance AGT
     d_AGT_conc_dt = mass_balance_AGT(k_AGT, c_Renin, AGT_conc, k_degr_AGT)
@@ -100,8 +67,7 @@ def ODE(t, conc, drugdose, ke_diacid,
                                                  k_ACE2,
                                                  AngI_conc,
                                                  c_ACE,
-                                                 Inhibition,
-                                                 k_SARS)
+                                                 Inhibition)
     d_AngII_conc_dt = mass_balance_AngII_infection(h_ANGII,
                                                    c_AT1,
                                                    k_APA,
@@ -110,10 +76,10 @@ def ODE(t, conc, drugdose, ke_diacid,
                                                    AngII_conc,
                                                    c_ACE,
                                                    AngI_conc,
-                                                   Inhibition,
-                                                   k_SARS)
-    d_ANG17_conc_dt = mass_balance_ANG17(k_NEP, AngI_conc, k_ACE2, k_SARS, AngII_conc, h_ANGII, ANG17_conc)
-    d_SBP_dt = blood_pressure_change(AngII_conc, ANG17_conc, t, sbp_spikes)
+                                                   Inhibition)
+    d_ANG17_conc_dt = mass_balance_ANG17(k_NEP, AngI_conc, k_ACE2, AngII_conc, h_ANG17, ANG17_conc)
+    d_AT1R_conc_dt = mass_balance_ATR(c_AT1, AngII_conc, h_ATR, AT1R_conc)
+    d_AT2R_conc_dt = mass_balance_ATR(k_AT2, AngII_conc, h_ATR, AT2R_conc)
 
     # concentration derivative vector has entries for Ang I, Ang II, and Renin
     d_conc_dt = np.array([
@@ -122,7 +88,8 @@ def ODE(t, conc, drugdose, ke_diacid,
         d_Renin_conc_dt,
         d_AGT_conc_dt,
         d_ANG17_conc_dt,
-        d_SBP_dt,
+        d_AT1R_conc_dt,
+        d_AT2R_conc_dt,
     ])
 
     return d_conc_dt
@@ -134,7 +101,16 @@ def local_RAS_model(coefficients, drug_dose, tau,
                     AngI_conc_t0, AngII_conc_t0, Renin_conc_t0, diacid_conc_t0,
                     drug_conc_t0, AGT_conc_t0, k_degr_Renin, k_degr_AngI,
                     k_degr_AGT, Mw_AngI, Mw_AngII, Mw_Renin, Mw_AGT,
-                    sim_time_end, tstart_dosing, glu, sbp, sbp_spikes, k_SARS):
+                    sim_time_end, tstart_dosing, glu,
+                    c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
+                    k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
+                    h_ANGII,
+                    ANG17_conc_t0,
+                    AT1R_conc_t0,
+                    AT2R_conc_t0,
+                    h_ANG17,
+                    h_ATR):
+
     c_Renin, k_cat_Renin, k_feedback, feedback_capacity, k_cons_AngII = coefficients
 
     # impose constraining assumption that the initial values are steady-state
@@ -142,11 +118,9 @@ def local_RAS_model(coefficients, drug_dose, tau,
 
     t_eval = np.arange(0, sim_time_end, tau / 500)  # hours
 
-    ANG17_conc_t0 = AngII_conc_t0
-    SBP_t0 = sbp
-
     # initial condition for the ODE solver
-    conc_t0 = np.array([AngI_conc_t0, AngII_conc_t0, Renin_conc_t0, AGT_conc_t0, ANG17_conc_t0, SBP_t0])
+    conc_t0 = np.array([AngI_conc_t0, AngII_conc_t0, Renin_conc_t0, AGT_conc_t0,
+                        ANG17_conc_t0, AT1R_conc_t0, AT2R_conc_t0])
 
     ODE_args = (
         drug_dose, ke_diacid,
@@ -157,7 +131,9 @@ def local_RAS_model(coefficients, drug_dose, tau,
         baseline_prod_Renin,
         k_degr_Renin, k_degr_AngI, k_degr_AGT,
         tstart_dosing, glu,
-        sbp_spikes, k_SARS
+        c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
+        k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
+        h_ANGII, h_ANG17, h_ATR
     )
     sol = solve_ivp(fun=ODE, t_span=[0, sim_time_end], y0=conc_t0,
                     args=ODE_args,
@@ -196,28 +172,28 @@ def local_RAS_model(coefficients, drug_dose, tau,
     Renin_conc = sol["y"][2, :] * Mw_Renin * conv_rate
     AGT_conc = sol["y"][3, :] * Mw_AGT * conv_rate
     Ang17_conc = sol["y"][4, :] * Mw_AngII * conv_rate
-    SBP = sol["y"][5, :]
+    AT1R_conc = sol["y"][5, :] * Mw_AngII * conv_rate
+    AT2R_conc = sol["y"][6, :] * Mw_AngII * conv_rate
 
     Inhibition = (100. * (diacid_conc ** n_Hill)) / (diacid_conc ** n_Hill + C50 ** n_Hill)
 
     plt.figure()
     plt.plot(sol["t"], AngII_conc, label="ANG-II")
     plt.plot(sol["t"], Ang17_conc, label="ANG-(1-7)")
+    plt.plot(sol["t"], AT1R_conc, label="AT1R")
+    plt.plot(sol["t"], AT2R_conc, label="AT2R")
+    plt.plot(sol["t"], (Ang17_conc * AT2R_conc)/AT1R_conc, label="K")
     plt.legend()
     plt.show()
 
-    plt.figure()
-    plt.plot(sol["t"], SBP, label="SBP")
-    plt.legend()
-    plt.show()
 
     return sol["t"], diacid_conc, AngII_conc, AngI_conc, \
-           Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, SBP
+           Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc
 
 
 def call_infection(args, params):
     out_dir = f"./data/{args.age}"
-    file_name = f"DKD_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
+    file_name = f"DKD_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
     file = os.path.join(out_dir, file_name)
     if os.path.isfile(file):
         return
@@ -226,17 +202,6 @@ def call_infection(args, params):
     drug_dose = args.dose * 1e6
     pill_mg = args.dose * 1e-6
     tau = 24 / args.n_dose
-    if args.renal_function == "normal":
-        sbp = 120
-        sbp_spikes = 1.0
-    else:
-        sbp = 150
-        sbp_spikes = 2.0
-
-    if args.infection:
-        k_SARS = 0.01
-    else:
-        k_SARS = 3.5
 
     # ODE coefficients
     coefficients = [
@@ -247,6 +212,54 @@ def call_infection(args, params):
         params["k_cons_AngII"][0][0],
     ]
     coefficients = np.array(coefficients)
+
+    # Glucose-dependent rate params for enzymatic/binding reactions
+    # from Pilvankar et. al 2018 from Approach 1
+    Rate_params = np.array([
+        1.527482117056147e-07,
+        1.705688364046031e-05,
+        2.472978807773762e-04,
+        4.533794480918563e-03,
+        7.072930413876994e-04,
+        1.296703909210782e-02
+    ])
+
+    # Units conversion:
+    # c_X_a: (L/mmol/s) to (L/mmol/hr)
+    # c_X_b: (1/s) to (1/hr)
+    c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b = Rate_params * 3600
+
+    # # TODO: double check
+    # c_Renin_b = 6.16e10-11
+    # c_ACE_b = 163
+    # c_AT1_b = 464
+
+    # Non-Glucose-dependent rate constants for enzymatic/binding reactions
+    # from Pilvankar et. al 2018 from Approach 1
+    Rate_cons = np.array([
+        1.210256981930063e-02,
+        1.069671574938187e-04,
+        6.968146259597334e-03,
+        1.628277841850352e-04,
+        6.313823632053240E+02
+    ])
+    # Units converted from
+    # k_APA, k_ACE2, k_AT2, k_NEP: from (1/s) to (1/hr)
+    # k_AGT: from (nmol/L/s) to (umol/L/hr)
+    k_APA, k_ACE2, k_AT2, k_NEP, k_AGT = Rate_cons * 3600
+    h_ANGII = 18 / 3600  # from (s) to (hr)
+
+    # interventions
+    if args.infection:
+        k_SARS = 0.01
+        k_ACE2 = k_SARS * k_ACE2
+
+    ANG17_conc_t0 = 9.858 # 3.1 ng/mL --> 9.858 nmol/L
+    AT1R_conc_t0 = 16.2 # nmol/L
+    AT2R_conc_t0 = 5.4 # nmol/L
+    h_ANG17 = 0.5 # hr
+    h_ATR = 0.2 # hr
+
 
     # load PK parameters
     pk_params_file = "".join(["PK_params_", args.drug_name, args.renal_function, ".mat"])
@@ -287,12 +300,18 @@ def call_infection(args, params):
                                args.sim_time_end,
                                args.tstart_dosing,
                                args.glu,
-                               sbp,
-                               sbp_spikes,
-                               k_SARS)
+
+                               c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
+                               k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
+                               h_ANGII,
+                               ANG17_conc_t0,
+                               AT1R_conc_t0,
+                               AT2R_conc_t0,
+                               h_ANG17,
+                               h_ATR)
 
     t, diacid_conc, AngII_conc, AngI_conc, \
-    Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, SBP = solution
+    Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc = solution
 
     ANGII_Plot = 0.021001998652419
     # y_angII = ((AngII_conc / (pk_params["Mw_AngII"][0][0] * 10**6/1000)) / ANGII_Plot) * 100
@@ -300,21 +319,24 @@ def call_infection(args, params):
     tplot = t / 24
     y_angII = AngII_conc / (pk_params["Mw_AngII"][0][0] * 10 ** 6 / 1000)
     y_ang17 = Ang17_conc / (pk_params["Mw_AngII"][0][0] * 10 ** 6 / 1000)
+    y_at1r = AT1R_conc / (pk_params["Mw_AngII"][0][0] * 10 ** 6 / 1000)
+    y_at2r = AT2R_conc / (pk_params["Mw_AngII"][0][0] * 10 ** 6 / 1000)
 
     save_var = {
-        "params": args,
         "t": tplot,
         "angII": y_angII,
         "angII_norm": y_angII_norm,
         "diacid": diacid_conc,
         "ang17": y_ang17,
-        "sbp": SBP,
+        "at1r": y_at1r,
+        "at2r": y_at2r,
     }
     dose = str(args.dose).replace(".", "-")
     out_dir = f"./data/{args.age}"
     if not os.path.isdir(out_dir):
         os.makedirs(out_dir)
-    file_name = f"DKD_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
-    pickle.dump(save_var, open(os.path.join(out_dir, file_name), 'wb'))
+    file_name = f"DKD_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
+    df = DataFrame(save_var)
+    df.to_csv(os.path.join(out_dir, file_name), index=False)
 
     return solution

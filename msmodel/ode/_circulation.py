@@ -32,6 +32,10 @@ def ODE(t, y,
         t_list,
         Pra_list, Prv_list, Pla_list, Plv_list,
         Vra_list, Vrv_list, Vla_list, Vlv_list,
+        Vpap_list, Vpad_list, Vpa_list, Vpc_list, Vpv_list,
+        Ppap_list, Ppad_list, Ppa_list, Ppc_list, Ppv_list,
+        Vsa_list, Vsap_list, Vsc_list, Vsv_list,
+        Psa_list, Psap_list, Psc_list, Psv_list,
 
         # heart
         Ts1v, Ts1a, Ts2, offv,
@@ -267,6 +271,25 @@ def ODE(t, y,
         Vla_list.append(Vla)
         Vlv_list.append(Vlv)
 
+        Vpap_list.append(Vpap)
+        Vpad_list.append(Vpad)
+        Vpa_list.append(Vpa)
+        Vpc_list.append(Vpc)
+        Vpv_list.append(Vpv)
+        Ppap_list.append(Ppap)
+        Ppad_list.append(Ppad)
+        Ppa_list.append(Ppa)
+        Ppc_list.append(Ppc)
+        Ppv_list.append(Ppv)
+        Vsa_list.append(Vsa)
+        Vsap_list.append(Vsap)
+        Vsc_list.append(Vsc)
+        Vsv_list.append(Vsv)
+        Psa_list.append(Psa)
+        Psap_list.append(Psap)
+        Psc_list.append(Psc)
+        Psv_list.append(Psv)
+
     change_list.append([HRa, HRv, Tsv, Tsa, Vvarlvs0, Vvarrvs0, n, m, tRwave, tPwave, af_con2])
 
     return dy
@@ -274,18 +297,10 @@ def ODE(t, y,
 
 def call_cardio(args, params, debug=False):
     out_dir = f"./data/{args.age}"
-    file_name = f"CARDIO_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
+    file_name = f"CARDIO_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
     file = os.path.join(out_dir, file_name)
     if os.path.isfile(file):
         return
-
-    file_name = f"DKD_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
-    vars = pickle.load(open(os.path.join(out_dir, file_name), 'rb'))
-    # ang17_avg = 22
-    # angII_avg = 20
-    # ang_diff = ang17_avg - angII_avg
-    # ang_ratio = np.mean(vars["ang17"]) / np.mean(vars["angII"])
-    ang_ratio = 1.08
 
     # load input data
     abp_df = pd.read_csv("cardiacdata2.csv")
@@ -297,20 +312,23 @@ def call_cardio(args, params, debug=False):
     tm = np.arange(tHB[0], tHB[-1], 0.02)
     ABPmeas = abp_df["ABP"].values
 
+    # RAS factor
+    file_name = f"DKD_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
+    df_dkd = pd.read_csv(os.path.join(out_dir, file_name), index_col=None)
+    ang17 = df_dkd["ang17"].iloc[-1]
+    at2r = df_dkd["at2r"].iloc[-1]
+    at1r = df_dkd["at1r"].iloc[-1]
+    K = (ang17*at2r) / at1r
+    K_base = 51
+    K_norm = K / K_base
+
     # age factor
-    # tau = 100
-    # x = 1 - t / tau * np.exp(-t / tau / 2) + t / tau * np.exp(-t / tau)
-    # x = 2 / (1 + np.exp(-1 / 8 * (t - 60)))
-    age_span = np.linspace(0, 100, 100)
-    age_damage = 1 / (1 + np.exp(1 / 10 * (age_span - 80)))
-    age_factor = np.interp(args.age, age_span, age_damage)
-    angiotensin_factor = (np.mean(vars["ang17"]) / np.mean(vars["angII"])) / ang_ratio
+    beta_1 = 1.2
+    beta_2 = 0.006
+    age_factor = beta_1 - beta_2 * args.age
+    angiotensin_factor = K_norm
     factor = angiotensin_factor * age_factor
 
-    x_max = np.max(ABPmeas) + (1 - factor) * np.max(ABPmeas)
-    x_min = np.min(ABPmeas) - (1 - factor) * np.min(ABPmeas)
-    scaler = MinMaxScaler((x_min, x_max))
-    ABPmeas = scaler.fit_transform(ABPmeas.reshape(-1, 1)).squeeze()
     params.loc["Caop", "value"] = params.loc["Caop", "value"] * factor
     params.loc["Caod", "value"] = params.loc["Caod", "value"] * factor
     params.loc["Csap", "value"] = params.loc["Csap", "value"] * factor
@@ -334,6 +352,30 @@ def call_cardio(args, params, debug=False):
     params.loc["Eminra", "value"] = params.loc["Eminra", "value"] / factor
     params.loc["Emaxla", "value"] = params.loc["Emaxla", "value"] / factor
     params.loc["Eminla", "value"] = params.loc["Eminla", "value"] / factor
+
+    # params.loc["Vlvd0", "value"] = params.loc["Vlvd0", "value"] * (factor + 0.1)
+    # params.loc["Vlvs0", "value"] = params.loc["Vlvs0", "value"] * (factor + 0.1)
+    # params.loc["Vrvd0", "value"] = params.loc["Vrvd0", "value"] * (factor + 0.1)
+    # params.loc["Vrvs0", "value"] = params.loc["Vrvs0", "value"] * (factor + 0.1)
+    # params.loc["Vlad0", "value"] = params.loc["Vlad0", "value"] * (factor + 0.1)
+    # params.loc["Vlas0", "value"] = params.loc["Vlas0", "value"] * (factor + 0.1)
+    # params.loc["Vrad0", "value"] = params.loc["Vrad0", "value"] * (factor + 0.1)
+    # params.loc["Vras0", "value"] = params.loc["Vras0", "value"] * (factor + 0.1)
+    # params.loc["Vaop0", "value"] = params.loc["Vaop0", "value"] * (factor + 0.1)
+    # params.loc["Vaod0", "value"] = params.loc["Vaod0", "value"] * (factor + 0.1)
+    # params.loc["Vsap0", "value"] = params.loc["Vsap0", "value"] * (factor + 0.1)
+    # params.loc["Vsc0", "value"] = params.loc["Vsc0", "value"] * (factor + 0.1)
+    # params.loc["Vsa0", "value"] = params.loc["Vsa0", "value"] * (factor + 0.1)
+    # params.loc["Vvc0", "value"] = params.loc["Vvc0", "value"] * (factor + 0.1)
+    # params.loc["Vpap0", "value"] = params.loc["Vpap0", "value"] * (factor + 0.1)
+    # params.loc["Vpad0", "value"] = params.loc["Vpad0", "value"] * (factor + 0.1)
+    # params.loc["Vpa0", "value"] = params.loc["Vpa0", "value"] * (factor + 0.1)
+    # params.loc["Vpc0", "value"] = params.loc["Vpc0", "value"] * (factor + 0.1)
+    # params.loc["Vpv0", "value"] = params.loc["Vpv0", "value"] * (factor + 0.1)
+    # params.loc["Vcorepi0", "value"] = params.loc["Vcorepi0", "value"] * (factor + 0.1)
+    # params.loc["Vcorintra0", "value"] = params.loc["Vcorintra0", "value"] * (factor + 0.1)
+    # params.loc["Vcorcap0", "value"] = params.loc["Vcorcap0", "value"] * (factor + 0.1)
+    # params.loc["Vcorvn0", "value"] = params.loc["Vcorvn0", "value"] * (factor + 0.1)
 
     # derive initial values
     ABPshift = np.interp(np.min(tHB), tmeas, ABPmeas)
@@ -421,6 +463,10 @@ def call_cardio(args, params, debug=False):
     t_list = []
     Pra_list, Prv_list, Pla_list, Plv_list = [], [], [], []
     Vra_list, Vrv_list, Vla_list, Vlv_list = [], [], [], []
+    Vpap_list, Vpad_list, Vpa_list, Vpc_list, Vpv_list = [], [], [], [], []
+    Ppap_list, Ppad_list, Ppa_list, Ppc_list, Ppv_list = [], [], [], [], []
+    Vsa_list, Vsap_list, Vsc_list, Vsv_list = [], [], [], []
+    Psa_list, Psap_list, Psc_list, Psv_list = [], [], [], []
 
     ODE_args = (
         x, tHB, HP, tmeas, ABPmeas, PAFmeas, Nbr_list, Nbr_list_idx,
@@ -428,6 +474,10 @@ def call_cardio(args, params, debug=False):
         t_list,
         Pra_list, Prv_list, Pla_list, Plv_list,
         Vra_list, Vrv_list, Vla_list, Vlv_list,
+        Vpap_list, Vpad_list, Vpa_list, Vpc_list, Vpv_list,
+        Ppap_list, Ppad_list, Ppa_list, Ppc_list, Ppv_list,
+        Vsa_list, Vsap_list, Vsc_list, Vsv_list,
+        Psa_list, Psap_list, Psc_list, Psv_list,
 
         params.loc["Ts1v", "value"],
         params.loc["Ts1a", "value"],
@@ -564,7 +614,7 @@ def call_cardio(args, params, debug=False):
     )
 
     if not debug:
-        max_time_step = 10
+        max_time_step = 15
         sol = solve_ivp(fun=ODE,
                         t_span=[tHB[0], tHB[max_time_step]],
                         y0=y0,
@@ -587,14 +637,26 @@ def call_cardio(args, params, debug=False):
         y_df.columns = cols
         y_df.to_csv("cardio_y.csv")
 
-        pv_lists = [t_list, Pra_list, Prv_list, Pla_list, Plv_list, Vra_list, Vrv_list, Vla_list, Vlv_list]
-        pv_cols = ["t", "Pra", "Prv", "Pla", "Plv", "Vra", "Vrv", "Vla", "Vlv"]
+        pv_lists = [
+            t_list, Pra_list, Prv_list, Pla_list, Plv_list, Vra_list, Vrv_list, Vla_list, Vlv_list,
+            Vpap_list, Vpad_list, Vpa_list, Vpc_list, Vpv_list,
+            Ppap_list, Ppad_list, Ppa_list, Ppc_list, Ppv_list,
+            Vsa_list, Vsap_list, Vsc_list, Vsv_list,
+            Psa_list, Psap_list, Psc_list, Psv_list,
+        ]
+        pv_cols = [
+            "t", "Pra", "Prv", "Pla", "Plv", "Vra", "Vrv", "Vla", "Vlv",
+            "Vpap", "Vpad", "Vpa", "Vpc", "Vpv",
+            "Ppap", "Ppad", "Ppa", "Ppc", "Ppv",
+            "Vsa", "Vsap", "Vsc", "Vsv",
+            "Psa", "Psap", "Psc", "Psv",
+        ]
         pv_df = pd.DataFrame.from_records(pv_lists).T
         pv_df.columns = pv_cols
 
         output_dir = f"data/{args.age}"
         if not os.path.isdir(output_dir):
             os.makedirs(output_dir)
-        pv_df.to_csv(os.path.join(output_dir, f"CARDIO_drug-{args.drug_name}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"))
+        pv_df.to_csv(os.path.join(output_dir, f"CARDIO_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"))
 
     return
