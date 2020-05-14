@@ -256,35 +256,36 @@ def ODE(t, y,
 
     # save some updated variables
     if np.min(np.abs(t - tmeas)) < 1E-4:
+        print(t)
         Nbr_list.append(Nbr)
         Nbr_list_idx.append(t)
 
         t_list.append(t)
 
-        Pra_list.append(Pra)
-        Prv_list.append(Prv)
-        Pla_list.append(Pla)
-        Plv_list.append(Plv)
-
-        Vra_list.append(Vra)
-        Vrv_list.append(Vrv)
-        Vla_list.append(Vla)
-        Vlv_list.append(Vlv)
-
-        Vpap_list.append(Vpap)
-        Vpad_list.append(Vpad)
-        Vpa_list.append(Vpa)
-        Vpc_list.append(Vpc)
-        Vpv_list.append(Vpv)
-        Ppap_list.append(Ppap)
-        Ppad_list.append(Ppad)
-        Ppa_list.append(Ppa)
-        Ppc_list.append(Ppc)
-        Ppv_list.append(Ppv)
-        Vsa_list.append(Vsa)
-        Vsap_list.append(Vsap)
-        Vsc_list.append(Vsc)
-        Vsv_list.append(Vsv)
+        # Pra_list.append(Pra)
+        # Prv_list.append(Prv)
+        # Pla_list.append(Pla)
+        # Plv_list.append(Plv)
+        #
+        # Vra_list.append(Vra)
+        # Vrv_list.append(Vrv)
+        # Vla_list.append(Vla)
+        # Vlv_list.append(Vlv)
+        #
+        # Vpap_list.append(Vpap)
+        # Vpad_list.append(Vpad)
+        # Vpa_list.append(Vpa)
+        # Vpc_list.append(Vpc)
+        # Vpv_list.append(Vpv)
+        # Ppap_list.append(Ppap)
+        # Ppad_list.append(Ppad)
+        # Ppa_list.append(Ppa)
+        # Ppc_list.append(Ppc)
+        # Ppv_list.append(Ppv)
+        # Vsa_list.append(Vsa)
+        # Vsap_list.append(Vsap)
+        # Vsc_list.append(Vsc)
+        # Vsv_list.append(Vsv)
         Psa_list.append(Psa)
         Psap_list.append(Psap)
         Psc_list.append(Psc)
@@ -614,7 +615,7 @@ def call_cardio(args, params, debug=False):
     )
 
     if not debug:
-        max_time_step = 15
+        max_time_step = 50
         sol = solve_ivp(fun=ODE,
                         t_span=[tHB[0], tHB[max_time_step]],
                         y0=y0,
