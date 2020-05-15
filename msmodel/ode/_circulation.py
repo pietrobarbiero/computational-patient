@@ -255,17 +255,17 @@ def ODE(t, y,
     # print(f"\t d_Vra_dt[{d_Vra_dt:.2f}] d_Vrv_dt[{d_Vrv_dt:.2f}] d_Vla_dt[{d_Vla_dt:.2f}] d_Vlv_dt[{d_Vlv_dt:.2f}]")
 
     # save some updated variables
-    if np.min(np.abs(t - tmeas)) < 1E-4:
+    if np.min(np.abs(t - tmeas)) < 1E-3:
         print(t)
         Nbr_list.append(Nbr)
         Nbr_list_idx.append(t)
 
         t_list.append(t)
 
-        # Pra_list.append(Pra)
-        # Prv_list.append(Prv)
-        # Pla_list.append(Pla)
-        # Plv_list.append(Plv)
+        Pra_list.append(Pra)
+        Prv_list.append(Prv)
+        Pla_list.append(Pla)
+        Plv_list.append(Plv)
         #
         # Vra_list.append(Vra)
         # Vrv_list.append(Vrv)
@@ -277,11 +277,11 @@ def ODE(t, y,
         # Vpa_list.append(Vpa)
         # Vpc_list.append(Vpc)
         # Vpv_list.append(Vpv)
-        # Ppap_list.append(Ppap)
-        # Ppad_list.append(Ppad)
-        # Ppa_list.append(Ppa)
-        # Ppc_list.append(Ppc)
-        # Ppv_list.append(Ppv)
+        Ppap_list.append(Ppap)
+        Ppad_list.append(Ppad)
+        Ppa_list.append(Ppa)
+        Ppc_list.append(Ppc)
+        Ppv_list.append(Ppv)
         # Vsa_list.append(Vsa)
         # Vsap_list.append(Vsap)
         # Vsc_list.append(Vsc)
@@ -316,18 +316,12 @@ def call_cardio(args, params, debug=False):
     # RAS factor
     file_name = f"DKD_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
     df_dkd = pd.read_csv(os.path.join(out_dir, file_name), index_col=None)
-    ang17 = df_dkd["ang17"].iloc[-1]
-    at2r = df_dkd["at2r"].iloc[-1]
-    at1r = df_dkd["at1r"].iloc[-1]
-    K = (ang17*at2r) / at1r
-    K_base = 51
-    K_norm = K / K_base
+    angiotensin_factor = df_dkd["KS"].iloc[-1]
 
     # age factor
     beta_1 = 1.2
     beta_2 = 0.006
     age_factor = beta_1 - beta_2 * args.age
-    angiotensin_factor = K_norm
     factor = angiotensin_factor * age_factor
 
     params.loc["Caop", "value"] = params.loc["Caop", "value"] * factor
@@ -615,7 +609,7 @@ def call_cardio(args, params, debug=False):
     )
 
     if not debug:
-        max_time_step = 50
+        max_time_step = 10
         sol = solve_ivp(fun=ODE,
                         t_span=[tHB[0], tHB[max_time_step]],
                         y0=y0,
@@ -624,32 +618,34 @@ def call_cardio(args, params, debug=False):
                         # first_step=0.02,
                         # rtol=1e-1, atol=1e-2,
                         method="LSODA")
-        cols = [
-            "t",
-            "Vra", "Vrv", "Vla", "Vlv",
-            "MAPmeas", "Faop", "Faod", "Frv_sm", "Vaop", "Vaod", "Vsa", "Vsap", "Vsc", "Vsv", "Vvc", "Paop", "AOFmod", "ABPfol", "COmea",
-            "Vpap", "Vpad", "Vpa", "Vpc", "Vpv", "Fpap", "Fpad",
-            "Vcorepi", "Vcorintra", "Vcorcap", "Vcorvn",
-            "Nbr", "Nbr_t", "N_con", "N_vaso"
-        ]
-        t_df = pd.DataFrame(sol["t"])
-        y_df = pd.DataFrame(sol["y"].T)
-        y_df = pd.concat([t_df, y_df], axis=1)
-        y_df.columns = cols
-        y_df.to_csv("cardio_y.csv")
+        # cols = [
+        #     "t",
+        #     "Vra", "Vrv", "Vla", "Vlv",
+        #     "MAPmeas", "Faop", "Faod", "Frv_sm", "Vaop", "Vaod", "Vsa", "Vsap", "Vsc", "Vsv", "Vvc", "Paop", "AOFmod", "ABPfol", "COmea",
+        #     "Vpap", "Vpad", "Vpa", "Vpc", "Vpv", "Fpap", "Fpad",
+        #     "Vcorepi", "Vcorintra", "Vcorcap", "Vcorvn",
+        #     "Nbr", "Nbr_t", "N_con", "N_vaso"
+        # ]
+        # t_df = pd.DataFrame(sol["t"])
+        # y_df = pd.DataFrame(sol["y"].T)
+        # y_df = pd.concat([t_df, y_df], axis=1)
+        # y_df.columns = cols
+        # y_df.to_csv("cardio_y.csv")
 
         pv_lists = [
-            t_list, Pra_list, Prv_list, Pla_list, Plv_list, Vra_list, Vrv_list, Vla_list, Vlv_list,
-            Vpap_list, Vpad_list, Vpa_list, Vpc_list, Vpv_list,
+            t_list, Pra_list, Prv_list, Pla_list, Plv_list,
+            # Vra_list, Vrv_list, Vla_list, Vlv_list,
+            # Vpap_list, Vpad_list, Vpa_list, Vpc_list, Vpv_list,
             Ppap_list, Ppad_list, Ppa_list, Ppc_list, Ppv_list,
-            Vsa_list, Vsap_list, Vsc_list, Vsv_list,
+            # Vsa_list, Vsap_list, Vsc_list, Vsv_list,
             Psa_list, Psap_list, Psc_list, Psv_list,
         ]
         pv_cols = [
-            "t", "Pra", "Prv", "Pla", "Plv", "Vra", "Vrv", "Vla", "Vlv",
-            "Vpap", "Vpad", "Vpa", "Vpc", "Vpv",
+            "t", "Pra", "Prv", "Pla", "Plv",
+            # "Vra", "Vrv", "Vla", "Vlv",
+            # "Vpap", "Vpad", "Vpa", "Vpc", "Vpv",
             "Ppap", "Ppad", "Ppa", "Ppc", "Ppv",
-            "Vsa", "Vsap", "Vsc", "Vsv",
+            # "Vsa", "Vsap", "Vsc", "Vsv",
             "Psa", "Psap", "Psc", "Psv",
         ]
         pv_df = pd.DataFrame.from_records(pv_lists).T

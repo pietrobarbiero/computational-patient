@@ -74,7 +74,7 @@ def make_lineplot(dicts, measure, plot_dir, title, ylabel, t0=0):
         mask = (data["L"] == i) & (data["age"] == age)
         d = data.loc[mask, ["t", measure]].copy()
         g = sns.lineplot(x="t", y=measure, data=d[t0:], alpha=0.6)
-    plt.legend(["H", "I", "T"], loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.legend(["H", "T", "C+", "T+"], loc='center left', bbox_to_anchor=(1, 0.5))
     plt.title(f"{title}")
     sns.despine(left=True, bottom=True)
     plt.xlabel("time [day]")
@@ -111,9 +111,9 @@ def make_lineplot_age(dicts, measure, plot_dir, title, ylabel):
         for k, i in enumerate(lab):
             mask = (data["L"] == i) & (data["age"] == age)
             d = data.loc[mask, ["t", measure]].copy()
-            d[measure] -= k * std
+            # d[measure] -= k * std
             g = sns.lineplot(x="t", y=measure, data=d, alpha=0.6)
-        plt.legend(["H", "I", "T"], loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.legend(["H", "T", "C+", "T+"], loc='center left', bbox_to_anchor=(1, 0.5))
         plt.title(f"{title} - Age {age}")
         plt.ylim([min_y, max_y])
         sns.despine(left=True, bottom=True)
@@ -243,21 +243,21 @@ def main():
 
     if aging:
 
-        measures = {
-            "diacid": "Benazepril",
-            "ang17": "ANG-(1-7)",
-            "at1r": "AT1R",
-            "at2r": "AT2R",
-        }
-        for measure, title in measures.items():
-            dicts = search_data_aging(out_dir, "DKD", measure)
-            make_lineplot(dicts, measure, plot_dir, title, "concentration [ng/ml]")
+        # measures = {
+        #     "diacid": "Benazepril",
+        #     "ang17": "ANG-(1-7)",
+        #     "at1r": "AT1R",
+        #     "at2r": "AT2R",
+        # }
+        # for measure, title in measures.items():
+        #     dicts = search_data_aging(out_dir, "DKD", measure)
+        #     make_lineplot(dicts, measure, plot_dir, title, "concentration [ng/ml]")
 
         measures = {
             # "Ppap": "Proximal pulmonary artery",
             # "Ppad": "Distal pulmonary artery",
             # "Ppa": "Pulmonary arterioles",
-            # "Ppc": "Pulmonary capillaries",
+            "Ppc": "Pulmonary capillaries",
             # "Psa": "Systemic arteries",
             # "Psap": "Systemic arterioles",
             "Psc": "Systemic capillaries",

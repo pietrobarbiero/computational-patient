@@ -10,6 +10,7 @@ def load_configuration() -> argparse.Namespace:
     :return: configuration object
     """
     h = 24
+    days = 10
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--age", help="Patient age (years).",
@@ -25,14 +26,14 @@ def load_configuration() -> argparse.Namespace:
                                       "use glu = 1; for diabetic subjects, glu = 2. Rest all values will be"
                                       "used directly in mmol/L as steady state glucose input.",
                         default=1, required=False, type=float)
+    parser.add_argument("--drug-name", help="Drug name.", default="benazepril",
+                        required=False)
 
     parser.add_argument("--n-dose", help="Number of doses per day (cannot be zero).", default=1, required=False,
                         type=int)
-    parser.add_argument("--drug-name", help="Drug name.", default="benazepril",
-                        required=False, choices=["benazepril", "cilazapril"], nargs=1)
     parser.add_argument("--tstart-dosing", help="Initial dosing time.", default=h * 0, required=False, type=int)
-    parser.add_argument("--tfinal-dosing", help="Final dosing time.", default=h * 7, required=False, type=int)
-    parser.add_argument("--sim-time-end", help="Simulation end time.", default=h * 7, required=False, type=int)
+    parser.add_argument("--tfinal-dosing", help="Final dosing time.", default=h * days, required=False, type=int)
+    parser.add_argument("--sim-time-end", help="Simulation end time.", default=h * days, required=False, type=int)
 
     parser.add_argument("--show-plots", help="Show plots.", default=True, required=False, type=bool)
     parser.add_argument("--linestyle", help="Plot line style.", default="-", required=False, type=str)

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from pandas import DataFrame
 
 from ..infection._equations import mass_balance_AngI_infection, mass_balance_AngII_infection, mass_balance_ANG17, \
-    mass_balance_ATR
+    mass_balance_AT1R, mass_balance_AT2R
 from ..pd import GLU, mass_balance_AGT, mass_balance_Renin, mass_balance_AngI, mass_balance_AngII
 from ..pk import analytical_PK
 
@@ -23,10 +23,9 @@ def ODE(t, conc, drugdose, ke_diacid,
         tstart_dosing, glu,
         c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
         k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
-        h_ANGII, h_ANG17, h_ATR):
-
+        h_ANGII, h_ANG17, h_ATR, drug_type):
     # Input concentration vector conc contains species AngI, AngII & Renin
-    AngI_conc, AngII_conc, Renin_conc, AGT_conc, ANG17_conc, AT1R_conc, AT2R_conc = conc
+    AngI_conc, AngII_conc, Renin_conc, AGT_conc, ANG17_conc, AT1R_conc, AT2R_conc, KS = conc
 
     # PK model explicit functions
     diacid_conc = analytical_PK(drugdose,
@@ -67,7 +66,8 @@ def ODE(t, conc, drugdose, ke_diacid,
                                                  k_ACE2,
                                                  AngI_conc,
                                                  c_ACE,
-                                                 Inhibition)
+                                                 Inhibition,
+                                                 drug_type)
     d_AngII_conc_dt = mass_balance_AngII_infection(h_ANGII,
                                                    c_AT1,
                                                    k_APA,
@@ -76,10 +76,16 @@ def ODE(t, conc, drugdose, ke_diacid,
                                                    AngII_conc,
                                                    c_ACE,
                                                    AngI_conc,
-                                                   Inhibition)
+                                                   Inhibition,
+                                                   drug_type)
     d_ANG17_conc_dt = mass_balance_ANG17(k_NEP, AngI_conc, k_ACE2, AngII_conc, h_ANG17, ANG17_conc)
-    d_AT1R_conc_dt = mass_balance_ATR(c_AT1, AngII_conc, h_ATR, AT1R_conc)
-    d_AT2R_conc_dt = mass_balance_ATR(k_AT2, AngII_conc, h_ATR, AT2R_conc)
+    d_AT1R_conc_dt = mass_balance_AT1R(c_AT1, AngII_conc, h_ATR, AT1R_conc, Inhibition, drug_type)
+    d_AT2R_conc_dt = mass_balance_AT2R(k_AT2, AngII_conc, h_ATR, AT2R_conc)
+
+    k_in = 0.001
+    k_out = 0.1
+    x = k_in * (AT1R_conc/AT2R_conc - 0.8 * AT2R_conc/AT1R_conc + 0.5 * ANG17_conc) - k_out * KS
+    d_KS_dt = x
 
     # concentration derivative vector has entries for Ang I, Ang II, and Renin
     d_conc_dt = np.array([
@@ -90,6 +96,7 @@ def ODE(t, conc, drugdose, ke_diacid,
         d_ANG17_conc_dt,
         d_AT1R_conc_dt,
         d_AT2R_conc_dt,
+        d_KS_dt,
     ])
 
     return d_conc_dt
@@ -109,8 +116,9 @@ def local_RAS_model(coefficients, drug_dose, tau,
                     AT1R_conc_t0,
                     AT2R_conc_t0,
                     h_ANG17,
-                    h_ATR):
-
+                    h_ATR,
+                    drug_type,
+                    KS_0):
     c_Renin, k_cat_Renin, k_feedback, feedback_capacity, k_cons_AngII = coefficients
 
     # impose constraining assumption that the initial values are steady-state
@@ -120,7 +128,7 @@ def local_RAS_model(coefficients, drug_dose, tau,
 
     # initial condition for the ODE solver
     conc_t0 = np.array([AngI_conc_t0, AngII_conc_t0, Renin_conc_t0, AGT_conc_t0,
-                        ANG17_conc_t0, AT1R_conc_t0, AT2R_conc_t0])
+                        ANG17_conc_t0, AT1R_conc_t0, AT2R_conc_t0, KS_0])
 
     ODE_args = (
         drug_dose, ke_diacid,
@@ -133,7 +141,7 @@ def local_RAS_model(coefficients, drug_dose, tau,
         tstart_dosing, glu,
         c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
         k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
-        h_ANGII, h_ANG17, h_ATR
+        h_ANGII, h_ANG17, h_ATR, drug_type
     )
     sol = solve_ivp(fun=ODE, t_span=[0, sim_time_end], y0=conc_t0,
                     args=ODE_args,
@@ -174,21 +182,12 @@ def local_RAS_model(coefficients, drug_dose, tau,
     Ang17_conc = sol["y"][4, :] * Mw_AngII * conv_rate
     AT1R_conc = sol["y"][5, :] * Mw_AngII * conv_rate
     AT2R_conc = sol["y"][6, :] * Mw_AngII * conv_rate
+    KS = sol["y"][7, :]
 
     Inhibition = (100. * (diacid_conc ** n_Hill)) / (diacid_conc ** n_Hill + C50 ** n_Hill)
 
-    plt.figure()
-    plt.plot(sol["t"], AngII_conc, label="ANG-II")
-    plt.plot(sol["t"], Ang17_conc, label="ANG-(1-7)")
-    plt.plot(sol["t"], AT1R_conc, label="AT1R")
-    plt.plot(sol["t"], AT2R_conc, label="AT2R")
-    plt.plot(sol["t"], (Ang17_conc * AT2R_conc)/AT1R_conc, label="K")
-    plt.legend()
-    plt.show()
-
-
     return sol["t"], diacid_conc, AngII_conc, AngI_conc, \
-           Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc
+           Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc, KS
 
 
 def call_infection(args, params):
@@ -250,20 +249,30 @@ def call_infection(args, params):
     h_ANGII = 18 / 3600  # from (s) to (hr)
 
     # interventions
+    if args.drug_name in ["benazepril", "cilazapril"]:
+        drug_type = "ACEi"
+
+    elif args.drug_name == "losartan":
+        drug_type = "ARB"
+
     if args.infection:
-        k_SARS = 0.01
+        k_SARS = 10
         k_ACE2 = k_SARS * k_ACE2
 
-    ANG17_conc_t0 = 9.858 # 3.1 ng/mL --> 9.858 nmol/L
-    AT1R_conc_t0 = 16.2 # nmol/L
-    AT2R_conc_t0 = 5.4 # nmol/L
-    h_ANG17 = 0.5 # hr
-    h_ATR = 0.2 # hr
-
+    ANG17_conc_t0 = 9.858  # 3.1 ng/mL --> 9.858 nmol/L
+    AT1R_conc_t0 = 16.2  # nmol/L
+    AT2R_conc_t0 = 5.4  # nmol/L
+    h_ANG17 = 0.5  # hr
+    h_ATR = 0.2  # hr
+    KS_0 = 0.6
 
     # load PK parameters
-    pk_params_file = "".join(["PK_params_", args.drug_name, args.renal_function, ".mat"])
-    pk_params = scipy.io.loadmat(pk_params_file)
+    try:
+        pk_params_file = "".join(["PK_params_", args.drug_name, args.renal_function, ".mat"])
+        pk_params = scipy.io.loadmat(pk_params_file)
+    except:
+        pk_params_file = "".join(["PK_params_", "benazepril", args.renal_function, ".mat"])
+        pk_params = scipy.io.loadmat(pk_params_file)
 
     solution = local_RAS_model(coefficients,
                                drug_dose,
@@ -308,10 +317,17 @@ def call_infection(args, params):
                                AT1R_conc_t0,
                                AT2R_conc_t0,
                                h_ANG17,
-                               h_ATR)
+                               h_ATR,
+                               drug_type,
+                               KS_0)
 
     t, diacid_conc, AngII_conc, AngI_conc, \
-    Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc = solution
+    Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc, KS = solution
+
+    plt.figure()
+    plt.plot(t, 1 - (KS-KS_0), label="K")
+    plt.legend()
+    plt.show()
 
     ANGII_Plot = 0.021001998652419
     # y_angII = ((AngII_conc / (pk_params["Mw_AngII"][0][0] * 10**6/1000)) / ANGII_Plot) * 100
@@ -330,6 +346,7 @@ def call_infection(args, params):
         "ang17": y_ang17,
         "at1r": y_at1r,
         "at2r": y_at2r,
+        "KS": 1 - (KS-KS_0),
     }
     dose = str(args.dose).replace(".", "-")
     out_dir = f"./data/{args.age}"

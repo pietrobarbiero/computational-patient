@@ -17,8 +17,12 @@ def covid19_dkd_model(model="infection"):
 
     if model == "infection":
         args.renal_function = args.renal_function[0]
-        params_file = "".join(["params_", args.drug_name, args.renal_function, ".mat"])
-        params = scipy.io.loadmat(params_file)
+        try:
+            params_file = "".join(["params_", args.drug_name, args.renal_function, ".mat"])
+            params = scipy.io.loadmat(params_file)
+        except:
+            params_file = "".join(["params_", "benazepril", args.renal_function, ".mat"])
+            params = scipy.io.loadmat(params_file)
         call_infection(args, params)
 
         cardio_params = pd.read_csv('circulation.csv', index_col=0, squeeze=True)

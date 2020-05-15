@@ -6,7 +6,7 @@ from msmodel.pd._equations import _catalized_AngI
 def mass_balance_AngI_infection(c_Renin, AGT_conc, k_cat_Renin,
                                 Renin_conc, Renin_conc_t0,
                                 k_degr_AngI, k_NEP, k_ACE2, AngI_conc,
-                                c_ACE, Inhibition):
+                                c_ACE, Inhibition, drug_type):
     """
     Equation 5
 
@@ -39,13 +39,16 @@ def mass_balance_AngI_infection(c_Renin, AGT_conc, k_cat_Renin,
     # Rate of Ang I --> Ang II catalyzed by ACE with AngI_conc and I/KI
     # changing due to drug presence
     # peptide = ODE_glucose_RAS
-    angI_catalized = _catalized_AngI(c_ACE, AngI_conc, Inhibition)
+    if drug_type == "ACEi":
+        angI_catalized = _catalized_AngI(c_ACE, AngI_conc, Inhibition)
+    else:
+        angI_catalized = c_ACE * AngI_conc
 
     return angI_production - angI_degradation - angI_catalized
 
 
 def mass_balance_AngII_infection(h_ANGII, c_AT1, k_APA, k_ACE2, k_AT2, AngII_conc,
-                                 c_ACE, AngI_conc, Inhibition):
+                                 c_ACE, AngI_conc, Inhibition, drug_type):
     """
     Equation 6
 
@@ -65,7 +68,10 @@ def mass_balance_AngII_infection(h_ANGII, c_AT1, k_APA, k_ACE2, k_AT2, AngII_con
     k_degr_AngII = (np.log(2) / h_ANGII)
     baseline_cons_AngII = (c_AT1 + k_APA + k_ACE2 + k_AT2 + k_degr_AngII) * AngII_conc
 
-    angI_catalized = _catalized_AngI(c_ACE, AngI_conc, Inhibition)
+    if drug_type == "ACEi":
+        angI_catalized = _catalized_AngI(c_ACE, AngI_conc, Inhibition)
+    else:
+        angI_catalized = c_ACE * AngI_conc
 
     return angI_catalized - baseline_cons_AngII
 
@@ -84,7 +90,22 @@ def mass_balance_ANG17(k_NEP, AngI_conc, k_ACE2, AngII_conc, h_ANG17, ANG17_conc
     return k_NEP * AngI_conc + k_ACE2 * AngII_conc - np.log(2) / h_ANG17 * ANG17_conc
 
 
-def mass_balance_ATR(c_ATR, AngII_conc, h_ATR, ATR):
+def mass_balance_AT1R(c_ATR, AngII_conc, h_ATR, ATR, Inhibition, drug_type):
+    """
+
+    :param c_ATR:
+    :param AngII_conc:
+    :param h_ATR:
+    :param ATR:
+    :return:
+    """
+    if drug_type == "ACEi":
+        return c_ATR * AngII_conc - np.log(2) / h_ATR * ATR
+    else:
+        return c_ATR * AngII_conc * (1 - (Inhibition / 100)) - np.log(2) / h_ATR * ATR
+
+
+def mass_balance_AT2R(c_ATR, AngII_conc, h_ATR, ATR):
     """
 
     :param c_ATR:
