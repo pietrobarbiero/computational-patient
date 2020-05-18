@@ -23,7 +23,7 @@ def ODE(t, conc, drugdose, ke_diacid,
         tstart_dosing, glu,
         c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
         k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
-        h_ANGII, h_ANG17, h_ATR, drug_type):
+        h_ANGII, h_ANG17, h_ATR, drug_type, is_infected):
     # Input concentration vector conc contains species AngI, AngII & Renin
     AngI_conc, AngII_conc, Renin_conc, AGT_conc, ANG17_conc, AT1R_conc, AT2R_conc, KS = conc
 
@@ -83,9 +83,13 @@ def ODE(t, conc, drugdose, ke_diacid,
     d_AT2R_conc_dt = mass_balance_AT2R(k_AT2, AngII_conc, h_ATR, AT2R_conc)
 
     k_in = 0.001
-    k_out = 0.1
-    x = k_in * (AT1R_conc/AT2R_conc - 0.8 * AT2R_conc/AT1R_conc + 0.5 * ANG17_conc) - k_out * KS
-    d_KS_dt = x
+    if not is_infected:
+        k_out = 0.1
+    else:
+        k_out = 0.08
+
+    infection_feedback = k_in * (AT1R_conc/AT2R_conc - 0.9 * AT2R_conc/AT1R_conc + 0.5 * ANG17_conc) - k_out * KS
+    d_KS_dt = infection_feedback
 
     # concentration derivative vector has entries for Ang I, Ang II, and Renin
     d_conc_dt = np.array([
@@ -118,7 +122,7 @@ def local_RAS_model(coefficients, drug_dose, tau,
                     h_ANG17,
                     h_ATR,
                     drug_type,
-                    KS_0):
+                    KS_0, is_infected):
     c_Renin, k_cat_Renin, k_feedback, feedback_capacity, k_cons_AngII = coefficients
 
     # impose constraining assumption that the initial values are steady-state
@@ -141,7 +145,7 @@ def local_RAS_model(coefficients, drug_dose, tau,
         tstart_dosing, glu,
         c_Renin_a, c_Renin_b, c_ACE_a, c_ACE_b, c_AT1_a, c_AT1_b,
         k_APA, k_ACE2, k_AT2, k_NEP, k_AGT,
-        h_ANGII, h_ANG17, h_ATR, drug_type
+        h_ANGII, h_ANG17, h_ATR, drug_type, is_infected
     )
     sol = solve_ivp(fun=ODE, t_span=[0, sim_time_end], y0=conc_t0,
                     args=ODE_args,
@@ -319,13 +323,13 @@ def call_infection(args, params):
                                h_ANG17,
                                h_ATR,
                                drug_type,
-                               KS_0)
+                               KS_0, args.infection)
 
     t, diacid_conc, AngII_conc, AngI_conc, \
     Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc, KS = solution
 
     plt.figure()
-    plt.plot(t, 1 - (KS-KS_0), label="K")
+    plt.plot(t, (KS-KS_0), label="K")
     plt.legend()
     plt.show()
 
@@ -346,7 +350,7 @@ def call_infection(args, params):
         "ang17": y_ang17,
         "at1r": y_at1r,
         "at2r": y_at2r,
-        "KS": 1 - (KS-KS_0),
+        "KS": (KS-KS_0),
     }
     dose = str(args.dose).replace(".", "-")
     out_dir = f"./data/{args.age}"

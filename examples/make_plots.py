@@ -61,10 +61,16 @@ def make_box_plot(dicts, measure, plot_dir, title, ylabel):
 
 
 def make_lineplot(dicts, measure, plot_dir, title, ylabel, t0=0):
-    L = dicts["infection"] + dicts["glucose"] + dicts["dose"]
+    dicts.reset_index(inplace=True)
+    L = []
+    for v in range(0, dicts.shape[0]):
+        L.append(f'{int(dicts["infection"][v]):2d}_{int(dicts["glucose"][v]):2d}_{int(dicts["dose"][v]):2d}')
+    L = pd.Series(L)
     L.name = "L"
     data = pd.concat([dicts, L], axis=1)
-    age = "60"
+    age = "20"
+
+    data[[measure, "L"]].groupby(["L"]).min()
 
     sns.set_style("whitegrid")
     plt.figure(figsize=[5, 3])
@@ -74,7 +80,7 @@ def make_lineplot(dicts, measure, plot_dir, title, ylabel, t0=0):
         mask = (data["L"] == i) & (data["age"] == age)
         d = data.loc[mask, ["t", measure]].copy()
         g = sns.lineplot(x="t", y=measure, data=d[t0:], alpha=0.6)
-    plt.legend(["H", "T", "C+", "T+"], loc='center left', bbox_to_anchor=(1, 0.5))
+    plt.legend(["H", "C+T", "V", "C+V", "C+V+T"], loc='center left', bbox_to_anchor=(1, 0.5))
     plt.title(f"{title}")
     sns.despine(left=True, bottom=True)
     plt.xlabel("time [day]")
@@ -88,16 +94,56 @@ def make_lineplot(dicts, measure, plot_dir, title, ylabel, t0=0):
     gc.collect()
 
 
-def make_lineplot_age(dicts, measure, plot_dir, title, ylabel):
-    # mask1 = (dicts[measure]["infection"] == "0") & (dicts[measure]["glucose"] == "5") & (dicts[measure]["dose"] == "0")
-    # mask2 = (dicts[measure]["infection"] == "1") & (dicts[measure]["glucose"] == "25") & (dicts[measure]["dose"] == "0")
-    # mask3 = (dicts[measure]["infection"] == "1") & (dicts[measure]["glucose"] == "25") & (dicts[measure]["dose"] == "5")
-
-    # L = dicts["infection"] + dicts["glucose"] + dicts["dose"] + dicts["renal"] + dicts["age"]
-    # L.name = "L"
-    L = dicts["infection"] + dicts["glucose"] + dicts["dose"]
+def make_pvplot(dicts, measure, plot_dir, title, xlabel, ylabel):
+    dicts.reset_index(inplace=True)
+    L = []
+    for v in range(0, dicts.shape[0]):
+        L.append(f'{int(dicts["infection"][v]):2d}_{int(dicts["glucose"][v]):2d}_{int(dicts["dose"][v]):2d}')
+    L = pd.Series(L)
     L.name = "L"
     data = pd.concat([dicts, L], axis=1)
+
+    data[[measure[0], measure[1], "L"]].groupby(["L"]).max()
+
+    ages = set(data["age"])
+    std = data[measure].std() / 8
+    min_y = data[measure].min() - 3*std
+    max_y = data[measure].max()
+    for age in ages:
+        sns.set_style("whitegrid")
+        plt.figure(figsize=[5, 3])
+        lab = list(set(L))
+        lab.sort()
+        for k, i in enumerate(lab):
+            mask = (data["L"] == i) & (data["age"] == age)
+            d = data.loc[mask, ["t", *measure]].copy()
+            g = sns.scatterplot(x=measure[0], y=measure[1], data=d, alpha=0.6)
+        plt.legend(["H", "C+T", "V", "C+V", "C+V+T"], loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.title(f"{title} - Age {age}")
+        plt.xlim([min_y[0], max_y[0]])
+        plt.ylim([min_y[1], max_y[1]])
+        sns.despine(left=True, bottom=True)
+        plt.xlabel(xlabel)
+        plt.ylabel(ylabel)
+        plt.tight_layout()
+        plt.savefig(f"{plot_dir}/{measure[0]}_{measure[1]}_{age}_pv.png")
+        plt.savefig(f"{plot_dir}/{measure[0]}_{measure[1]}_{age}_pv.pdf")
+        plt.show()
+        plt.clf()
+        plt.close()
+        gc.collect()
+
+
+def make_lineplot_age(dicts, measure, plot_dir, title, ylabel):
+    dicts.reset_index(inplace=True)
+    L = []
+    for v in range(0, dicts.shape[0]):
+        L.append(f'{int(dicts["infection"][v]):2d}_{int(dicts["glucose"][v]):2d}_{int(dicts["dose"][v]):2d}')
+    L = pd.Series(L)
+    L.name = "L"
+    data = pd.concat([dicts, L], axis=1)
+
+    data[[measure, "L"]].groupby(["L"]).max()
 
     ages = set(data["age"])
     std = data[measure].std() / 8
@@ -111,9 +157,8 @@ def make_lineplot_age(dicts, measure, plot_dir, title, ylabel):
         for k, i in enumerate(lab):
             mask = (data["L"] == i) & (data["age"] == age)
             d = data.loc[mask, ["t", measure]].copy()
-            # d[measure] -= k * std
             g = sns.lineplot(x="t", y=measure, data=d, alpha=0.6)
-        plt.legend(["H", "T", "C+", "T+"], loc='center left', bbox_to_anchor=(1, 0.5))
+        plt.legend(["H", "C+T", "V", "C+V", "C+V+T"], loc='center left', bbox_to_anchor=(1, 0.5))
         plt.title(f"{title} - Age {age}")
         plt.ylim([min_y, max_y])
         sns.despine(left=True, bottom=True)
@@ -128,79 +173,7 @@ def make_lineplot_age(dicts, measure, plot_dir, title, ylabel):
         gc.collect()
 
 
-    # L = dicts["infection"] + dicts["glucose"] + dicts["dose"]
-    # L.name = "L"
-    # data = pd.concat([dicts, L], axis=1)
-    #
-    # sns.set_style("whitegrid")
-    # plt.figure(figsize=[5, 3])
-    # plt.title(title)
-    # lab = list(set(L))
-    # lab.sort()
-    # for i in lab:
-    #     g = sns.lineplot(x="age", y=measure, data=data[data["L"] == i], ci=99)
-    # sns.despine(left=True, bottom=True)
-    # plt.xlabel("age")
-    # plt.ylabel(ylabel)
-    # plt.legend(["H", "I", "T"], loc='center left', bbox_to_anchor=(1, 0.5))
-    # # g.axes.grid(False)
-    # plt.tight_layout()
-    # plt.savefig(f"{plot_dir}/{measure}_aging.png")
-    # plt.savefig(f"{plot_dir}/{measure}_aging.pdf")
-    # plt.show()
-    # plt.clf()
-    # plt.close()
-    # gc.collect()
-
-
-def search_data(out_dir, file_type):
-    data = []
-    labels = []
-    for entry in os.listdir(out_dir):
-        par_dir = os.path.join(out_dir, entry)
-        if os.path.isdir(par_dir):
-            for file in os.listdir(par_dir):
-                if file.startswith(file_type):
-                    f1 = os.path.join(par_dir, file)
-                    y_df = pd.read_csv(f1)
-                    data.append(y_df)
-                    labels.append(f1)
-
-    label_list = []
-    for l in labels:
-        age = int(l.split("/")[1])
-        drug_dose = int(l.split("/")[2].split("_")[1].split("-")[1])
-        glucose = float(l.split("/")[2].split("_")[2].split("-")[1])
-        infection = int(l.split("/")[2].split("_")[3].split("-")[1])
-        renal = l.split("/")[2].split("_")[4].split("-")[1][:-4]
-        if age == 20:
-            new_label = "C0"
-        elif age == 60 and glucose == 5 and infection == 0 and drug_dose == 0:
-            new_label = "C1"
-        elif age == 60 and glucose == 5 and infection == 0 and drug_dose == 5:
-            new_label = "C2"
-        elif age == 60 and glucose == 25 and infection == 0 and drug_dose == 5:
-            new_label = "C3"
-        elif age == 60 and glucose == 5 and infection == 1 and drug_dose == 5:
-            new_label = "C4"
-        elif age == 60 and glucose == 25 and infection == 1 and drug_dose == 5:
-            new_label = "C5"
-        label_list.append(new_label)
-    df_label = pd.DataFrame(label_list)
-
-    columns = data[0].columns
-    dicts = {}
-    for c in columns:
-        dicts[c] = pd.DataFrame()
-        for d, l in zip(data, df_label.values):
-            label_list = [l[0] for i in d.iterrows()]
-            df = pd.concat([d.loc[:, c], pd.DataFrame(label_list, columns=["subjects"])], axis=1)
-            dicts[c] = pd.concat([dicts[c], df])
-
-    return dicts
-
-
-def search_data_aging(out_dir, file_type, measure):
+def search_data_aging(out_dir, file_type, measures):
     data = []
     labels = []
     for entry in os.listdir(out_dir):
@@ -227,7 +200,7 @@ def search_data_aging(out_dir, file_type, measure):
     dicts = pd.DataFrame()
     for d, l in zip(data, df_label.values):
         label_list = pd.DataFrame([l for i in d.iterrows()], columns=["age", "dose", "glucose", "infection", "renal"])
-        df = pd.concat([d.loc[min_t0:, "t"], d.loc[min_t0:, measure], label_list], axis=1)
+        df = pd.concat([d.loc[min_t0:, "t"], d.loc[min_t0:, measures], label_list], axis=1)
         dicts = pd.concat([dicts, df])
 
     return dicts
@@ -244,28 +217,30 @@ def main():
     if aging:
 
         # measures = {
-        #     "diacid": "Benazepril",
-        #     "ang17": "ANG-(1-7)",
-        #     "at1r": "AT1R",
-        #     "at2r": "AT2R",
+        #     "diacid": ["Benazepril", "concentration [ng/ml]"],
+        #     # "ang17": ["ANG-(1-7)", "concentration [ng/ml]"],
+        #     # "at1r": ["AT1R", "concentration [ng/ml]"],
+        #     # "at2r": ["AT2R", "concentration [ng/ml]"],
+        #     "KS": ["Inflammatory response", "score"],
         # }
-        # for measure, title in measures.items():
+        # for measure, (title, ylabel) in measures.items():
         #     dicts = search_data_aging(out_dir, "DKD", measure)
-        #     make_lineplot(dicts, measure, plot_dir, title, "concentration [ng/ml]")
+        #     make_lineplot(dicts, measure, plot_dir, title, ylabel)
 
         measures = {
-            # "Ppap": "Proximal pulmonary artery",
-            # "Ppad": "Distal pulmonary artery",
-            # "Ppa": "Pulmonary arterioles",
-            "Ppc": "Pulmonary capillaries",
-            # "Psa": "Systemic arteries",
-            # "Psap": "Systemic arterioles",
-            "Psc": "Systemic capillaries",
-            "Psv": "Systemic veins",
+            "Proximal pulmonary artery": ["Ppap", "Vpap"],
+            "Distal pulmonary artery": ["Ppad", "Vpad"],
+            "Pulmonary arterioles": ["Ppa", "Vpa"],
+            "Pulmonary capillaries": ["Ppc", "Vpc"],
+            "Systemic arteries": ["Psa", "Vsa"],
+            "Systemic arterioles": ["Psap", "Vsap"],
+            "Systemic capillaries": ["Psc", "Vsc"],
+            "Systemic veins": ["Psv", "Vsv"],
         }
-        for measure, title in measures.items():
+        for title, measure in measures.items():
             dicts = search_data_aging(out_dir, "CARDIO", measure)
-            make_lineplot_age(dicts, measure, plot_dir, title, "pressure [mmHg]")
+            make_pvplot(dicts, measure, plot_dir, title, "pressure [mmHg]", "volume [mL]")
+            # make_lineplot_age(dicts, measure, plot_dir, title, "pressure [mmHg]")
 
     # else:
     #     dicts = search_data(out_dir, "DKD")

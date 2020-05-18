@@ -7,7 +7,7 @@ import msmodel
 
 def main():
 
-    for age in np.arange(20, 70, 10):
+    for age in [70]:#np.arange(20, 70, 10):
         sys.argv.extend(["--age", str(age)])
         sys.argv.extend(["--infection", False])
         sys.argv.extend(["--dose", "0"])
