@@ -16,27 +16,27 @@ def main():
         msmodel.covid19_dkd_model(model="infection")
         sys.argv = [sys.argv[0]]
 
+        # sys.argv.extend(["--age", str(age)])
+        # sys.argv.extend(["--infection", "True"])
+        # sys.argv.extend(["--dose", "0"])
+        # sys.argv.extend(["--renal-function", "normal"])
+        # sys.argv.extend(["--glu", "5"])
+        # msmodel.covid19_dkd_model(model="infection")
+        # sys.argv = [sys.argv[0]]
+        #
+        # sys.argv.extend(["--age", str(age)])
+        # sys.argv.extend(["--infection", False])
+        # sys.argv.extend(["--dose", "5"])
+        # sys.argv.extend(["--renal-function", "impaired"])
+        # sys.argv.extend(["--glu", "25"])
+        # msmodel.covid19_dkd_model(model="infection")
+        # sys.argv = [sys.argv[0]]
+
         sys.argv.extend(["--age", str(age)])
         sys.argv.extend(["--infection", "True"])
         sys.argv.extend(["--dose", "0"])
-        sys.argv.extend(["--renal-function", "normal"])
-        sys.argv.extend(["--glu", "5"])
-        msmodel.covid19_dkd_model(model="infection")
-        sys.argv = [sys.argv[0]]
-
-        sys.argv.extend(["--age", str(age)])
-        sys.argv.extend(["--infection", False])
-        sys.argv.extend(["--dose", "5"])
         sys.argv.extend(["--renal-function", "impaired"])
-        sys.argv.extend(["--glu", "25"])
-        msmodel.covid19_dkd_model(model="infection")
-        sys.argv = [sys.argv[0]]
-
-        sys.argv.extend(["--age", str(age)])
-        sys.argv.extend(["--infection", "True"])
-        sys.argv.extend(["--dose", "0"])
-        sys.argv.extend(["--renal-function", "impaired"])
-        sys.argv.extend(["--glu", "25"])
+        sys.argv.extend(["--glu", "17"])
         msmodel.covid19_dkd_model(model="infection")
         sys.argv = [sys.argv[0]]
 
@@ -44,7 +44,7 @@ def main():
         sys.argv.extend(["--infection", "True"])
         sys.argv.extend(["--dose", "5"])
         sys.argv.extend(["--renal-function", "impaired"])
-        sys.argv.extend(["--glu", "25"])
+        sys.argv.extend(["--glu", "17"])
         msmodel.covid19_dkd_model(model="infection")
         sys.argv = [sys.argv[0]]
 

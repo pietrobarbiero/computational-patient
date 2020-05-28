@@ -86,9 +86,10 @@ def ODE(t, conc, drugdose, ke_diacid,
     if not is_infected:
         k_out = 0.1
     else:
-        k_out = 0.08
+        k_out = 0.5
 
-    infection_feedback = k_in * (AT1R_conc/AT2R_conc - 0.9 * AT2R_conc/AT1R_conc + 0.5 * ANG17_conc) - k_out * KS
+    # infection_feedback = k_in * (100 * AT1R_conc/AT2R_conc - 0.9 * AT2R_conc/AT1R_conc - 0.5 * ANG17_conc) - k_out * KS
+    infection_feedback = k_in * (AT2R_conc + ANG17_conc) - k_out * KS
     d_KS_dt = infection_feedback
 
     # concentration derivative vector has entries for Ang I, Ang II, and Renin
