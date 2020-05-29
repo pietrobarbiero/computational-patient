@@ -28,11 +28,11 @@ def covid19_dkd_model(model="infection"):
             params_file = "".join(["params_", "benazepril", args.renal_function, ".mat"])
             params = scipy.io.loadmat(params_file)
 
-        call_infection(args, params)
-        call_diabetes(args)
+        # call_infection(args, params)
+        # call_diabetes(args)
 
-        # cardio_params = pd.read_csv('circulation.csv', index_col=0, squeeze=True)
-        # call_cardio(args, cardio_params)
+        cardio_params = pd.read_csv('circulation.csv', index_col=0, squeeze=True)
+        call_cardio(args, cardio_params)
 
     elif model == "hypertension":
         call_hypertension(args)

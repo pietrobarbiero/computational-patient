@@ -10,7 +10,7 @@ def load_configuration() -> argparse.Namespace:
     :return: configuration object
     """
     h = 24
-    days = 10
+    days = 5
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--age", help="Patient age (years).",

@@ -316,14 +316,21 @@ def call_cardio(args, params, debug=False):
 
     # RAS factor
     file_name = f"DKD_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
-    df_dkd = pd.read_csv(os.path.join(out_dir, file_name), index_col=None)
-    angiotensin_factor = (1 - df_dkd["KS"].iloc[-1])
+    df_ras = pd.read_csv(os.path.join(out_dir, file_name), index_col=None)
+    ras_factor = 1 - df_ras["KS"].values[-1]
+
+    # glucose factor
+    file_name = f"DIABETES_glu-{args.glu}.csv"
+    df_diabetes = pd.read_csv(os.path.join(out_dir, file_name), index_col=None)
+    df_diabetes = df_diabetes[df_diabetes["t"] > 4]
+    daily_glucose_baseline = 81667
+    glucose_factor = daily_glucose_baseline / sum(df_diabetes["G"])
 
     # age factor
     beta_1 = 1.2
     beta_2 = 0.006
     age_factor = beta_1 - beta_2 * args.age
-    factor = angiotensin_factor * age_factor
+    factor = glucose_factor * age_factor * ras_factor
 
     params.loc["Caop", "value"] = params.loc["Caop", "value"] * factor
     params.loc["Caod", "value"] = params.loc["Caod", "value"] * factor
@@ -610,7 +617,7 @@ def call_cardio(args, params, debug=False):
     )
 
     if not debug:
-        max_time_step = 10
+        max_time_step = 5
         sol = solve_ivp(fun=ODE,
                         t_span=[tHB[0], tHB[max_time_step]],
                         y0=y0,

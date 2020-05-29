@@ -80,7 +80,7 @@ class StepFun:
 
 
 def call_diabetes(args):
-    days = 5
+    days = args.days
 
     # glucose step function
     x_init = [8, 8.5, 12, 12.5, 20, 20.5]
@@ -132,7 +132,7 @@ def call_diabetes(args):
     sol_df = pd.DataFrame(x.T, columns=["t", "I", "G", "beta", "IR", "MTOR", "Tt", "C"])
 
     out_dir = f"./data/{args.age}"
-    file_name = f"DIABETES_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
+    file_name = f"DIABETES_glu-{args.glu}.csv"
     file = os.path.join(out_dir, file_name)
     sol_df.to_csv(file)
 

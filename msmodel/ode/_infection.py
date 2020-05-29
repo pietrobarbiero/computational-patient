@@ -82,15 +82,19 @@ def ODE(t, conc, drugdose, ke_diacid,
     d_AT1R_conc_dt = mass_balance_AT1R(c_AT1, AngII_conc, h_ATR, AT1R_conc, Inhibition, drug_type)
     d_AT2R_conc_dt = mass_balance_AT2R(k_AT2, AngII_conc, h_ATR, AT2R_conc)
 
-    k_in = 0.001
+    k_in = 0.0045
     if not is_infected:
         k_out = 0.1
     else:
-        k_out = 0.5
+        k_out = 1
+
+    Q = ANG17_conc - AngII_conc
 
     # infection_feedback = k_in * (100 * AT1R_conc/AT2R_conc - 0.9 * AT2R_conc/AT1R_conc - 0.5 * ANG17_conc) - k_out * KS
-    infection_feedback = k_in * (AT2R_conc + ANG17_conc) - k_out * KS
-    d_KS_dt = infection_feedback
+    # infection_feedback = k_in * (AT2R_conc + ANG17_conc) - k_out * KS
+    # d_KS_dt = infection_feedback
+    # d_KS_dt = 0.001 * (20 / (1 + np.exp(-0.05 * k_ACE2 * Q))) * KS * np.log(5 / KS)
+    d_KS_dt = k_in * k_ACE2 * ANG17_conc - np.log(2) / 2 * KS
 
     # concentration derivative vector has entries for Ang I, Ang II, and Renin
     d_conc_dt = np.array([
@@ -197,7 +201,7 @@ def local_RAS_model(coefficients, drug_dose, tau,
 
 def call_infection(args, params):
     out_dir = f"./data/{args.age}"
-    file_name = f"DKD_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.dat"
+    file_name = f"DKD_drug-{args.dose}_glu-{args.glu}_infection-{int(args.infection)}_renal-{args.renal_function}.csv"
     file = os.path.join(out_dir, file_name)
     if os.path.isfile(file):
         return
@@ -261,7 +265,7 @@ def call_infection(args, params):
         drug_type = "ARB"
 
     if args.infection:
-        k_SARS = 10
+        k_SARS = 2
         k_ACE2 = k_SARS * k_ACE2
 
     ANG17_conc_t0 = 9.858  # 3.1 ng/mL --> 9.858 nmol/L
@@ -329,10 +333,10 @@ def call_infection(args, params):
     t, diacid_conc, AngII_conc, AngI_conc, \
     Inhibition, Renin_conc, drug_conc, AGT_conc, Ang17_conc, AT1R_conc, AT2R_conc, KS = solution
 
-    plt.figure()
-    plt.plot(t, (KS-KS_0), label="K")
-    plt.legend()
-    plt.show()
+    # plt.figure()
+    # plt.plot(t, KS, label="K")
+    # plt.legend()
+    # plt.show()
 
     ANGII_Plot = 0.021001998652419
     # y_angII = ((AngII_conc / (pk_params["Mw_AngII"][0][0] * 10**6/1000)) / ANGII_Plot) * 100
