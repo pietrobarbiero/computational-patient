@@ -317,6 +317,7 @@ def _rsa(Kr, f_vaso, Vsa, Vsa_max, Rsa0):
     :param Rsa0:
     :return:
     """
+    # TODO: double check equation
     return (Kr * np.exp(4 * f_vaso)) + (Kr * (Vsa_max / Vsa) ** 2) + Rsa0
 
 
@@ -330,4 +331,5 @@ def _rvc(KR, Vmax_vc, Vvc, R0):
     :param R0:
     :return:
     """
+    # TODO: double check equation
     return (KR * (Vmax_vc / Vvc) ** 2) + R0

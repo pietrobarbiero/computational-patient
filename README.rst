@@ -1,47 +1,65 @@
-Multiscale model for comorbid patients
+Computational patient
 =============================================================
 
-The following mathematical models will be integrated:
+This repository contains the python code required to reproduce the
+experiments presented in
+"Barbiero, P. and Liò, P. (2020). The Computational Patient has Diabetes and a COVID".
 
-- a PK/PD model of ACE inhibition of the renin-angiotensin system (RAS) [1][2][3][4][5]
-- a subject-specific model of the circulatory system
+Description
+------------
 
-Related Publications
----------------------
+Medicine is moving from reacting to a disease to prepare personalised and
+precision paths to well being. The complex and multi level pathophysiological
+patterns of most diseases require a systemic medicine approach and are challenging
+current medical therapies.
 
-[1] Pilvankar, Minu R., Michele A. Higgins, and Ashlee N. Ford Versypt. "Mathematical Model for Glucose Dependence of the Local Renin–Angiotensin System in Podocytes." Bulletin of Mathematical Biology, 80, no. 4 (2018): 880-905.
+Here we present a Digital patient model that integrates, refine and extend
+recent specific mechanistic or phenomenological models ofcardiovascular [1],
+RAS [2] and diabetic [3] processes. Our aim is twofold: analyse the modularity
+and composability of the models-building blocks of the Digital patient and to
+study the dynamical properties of well-being and disease states in a broader
+functional context. We present results from a number of experiments among
+which we characterise the dynamical impact of covid-19 and T2D diabetes on
+cardiovascular and inflammaging conditions. We tested these experiments under
+exercise and meals and drug regimen.
 
-[2] Pilvankar, M.R.; Higgins, M.A.; Ford Versypt, A.N. glucoseRASpodocytes. 2017. Available online: http:
-//github.com/ashleefv/glucoseRASpodocytes (accessed on 31 March 2020).
+Common clinical parameters such as diastolic and systolic blood pressure,
+heart patterns, blood cell counts are usually evaluated as averages.
+Little importance is given to higher moments such as variances during the
+day or during a longer interval of time. The lack of continuous measures
+for most of the quantities has generated a medical practice that disregard
+of unobserved or partially observed data. Our composable model reveals
+interesting patterns, particularly fluctuations in blood pressure, particularly
+when the diabetic model is coupled with the RAS and the cardiovascular models
+under COVID acute infections.
 
-[3] Pilvankar, Minu R., Hui L. Yong, and Ashlee N. Ford Versypt. "A Glucose-Dependent Pharmacokinetic/Pharmacodynamic Model of ACE Inhibition in Kidney Cells." Processes, 7(3), 131, 2019 https://doi.org/10.3390/pr7030131
+References
+-------------
 
-[4] Ford Versypt, A.N.; Harrell, G.K.; McPeak, A.N. A pharmacokinetic/pharmacodynamic model of ACE
-inhibition of the renin-angiotensin system for normal and impaired renal function. Comp. Chem. Eng.
-2017, 104, 311–322.
+[1] Neal, M. L., & Bassingthwaighte, J. B. (2007). Subject-specific model estimation of cardiac output and blood volume during hemorrhage. Cardiovascular engineering, 7(3), 97-120.
 
-[5] Ford Versypt, A.N. ACEInhibPKPD. 2017. Available online: http://github.com/ashleefv/ACEInhibPKPD
-(accessed on 31 March 2020).
+[2] Pilvankar, M. R., Yong, H. L., & Ford Versypt, A. N. (2019). A Glucose-Dependent Pharmacokinetic/Pharmacodynamic Model of ACE Inhibition in Kidney Cells. Processes, 7(3), 131.
 
-[6] Neal, Maxwell Lewis, and James B. Bassingthwaighte. "Subject-specific model estimation of cardiac output and blood volume during hemorrhage." Cardiovascular engineering 7.3 (2007): 97-120.
+[3] Topp, B., Promislow, K., Devries, G., Miura, R. M., & Finegood, D. T. (2000). A model of b-cell mass, insulin, and glucose kinetics: pathways to diabetes. Journal of theoretical biology, 206(4), 605.
 
 Quick start
 -----------
 
 You can install the software along with all its dependencies from
-`GitHub <https://github.com/pietrobarbiero/COVID19-DKD-PKPD>`__:
+`GitHub <https://github.com/pietrobarbiero/computational-patient>`__:
 
 .. code:: bash
 
-    $ git clone https://github.com/pietrobarbiero/COVID19-DKD-PKPD.git
-    $ cd ./COVID19-DKD-PKPD
+    $ git clone https://github.com/pietrobarbiero/computational-patient.git
+    $ cd ./computational-patient
     $ pip install -r requirements.txt .
 
 After having installed all the requirements you can run
-the example scripts:
+the example script ``./examples/aging.py`` for running experiments.
+The results will be saved under the directory ``./examples/data/``.
 
-- ``./examples/dkd.py`` for running the PK/PD model. The results will be saved under the directory``./examples/data/``. Once the results have been saved, you can make some plots by running the script ``./examples/make_plots.py``.
-- ``./examples/cardio.py`` for running the cardiovascular model. Results will be inside ``./examples/cardio_y.csv`` and ``./examples/volumes.png``.
+Once the results have been saved, you can make some plots
+by running the script ``./examples/make_plots.py``.
 
 Contributing
 -------------
@@ -63,7 +81,7 @@ Source
 ------
 
 The source code and minimal working examples can be found on
-`GitHub <https://github.com/pietrobarbiero/COVID19-DKD-PKPD>`__.
+`GitHub <https://github.com/pietrobarbiero/computational-patient>`__.
 
 
 Licence
