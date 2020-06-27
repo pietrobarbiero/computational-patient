@@ -1,6 +1,6 @@
 import numpy as np
 
-from msmodel.pd._equations import _catalized_AngI
+from patient.pd._equations import _catalized_AngI
 
 
 def mass_balance_AngI_infection(c_Renin, AGT_conc, k_cat_Renin,

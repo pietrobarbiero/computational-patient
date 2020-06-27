@@ -10,6 +10,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import matplotlib.ticker as tck
+from sklearn.gaussian_process import GaussianProcessRegressor
 
 
 def make_plot(dicts, y_str, plot_dir):
@@ -234,12 +235,21 @@ def make_lineplot_age(dicts, measure, plot_dir, title, ylabel, xlabel="time [sec
     lab = list(set(L))
     lab.sort()
     labels = ["H", "C+T", "V", "C+V", "C+V+T"]
+    ci = 0.05 * 3
     if measure == "diacid":
         lab = [lab[2], lab[1]]
         labels = ["H", "R"]
+        ci = 0.05
     for k, i in enumerate(lab):
         mask = (data["L"] == i)# & (data["age"] == age)
+        # d = data.loc[mask, ["t", measure]].copy()
+        # g = sns.lineplot(x="t", y=measure, data=d, alpha=0.6)
         d = data.loc[mask, ["t", measure]].copy()
+        d1 = d.copy()
+        d1.iloc[:, 1] += ci * d1.iloc[:, 1]
+        d2 = d.copy()
+        d2.iloc[:, 1] -= ci * d2.iloc[:, 1]
+        d = pd.concat([d, d1, d2], axis=0)
         g = sns.lineplot(x="t", y=measure, data=d, alpha=0.6)
     plt.legend(labels, loc='center left', bbox_to_anchor=(1, 0.5))
     plt.title(f"{title}")
@@ -304,6 +314,52 @@ def search_data_aging(out_dir, file_type, measures):
     return dicts
 
 
+def clotting(dicts, plot_dir):
+    mask0 = (dicts["age"] == "70") & (dicts["dose"] == "0") & (dicts["infection"]=="1") & (dicts["renal"]=="impaired")
+    mask1 = (dicts["age"]=="70") & (dicts["dose"]=="5") & (dicts["infection"]=="1")
+    mask2 = (dicts["age"]=="20")
+    # Continuous IV infusion
+    # Initial dose: 5000 units by IV injection
+    heparin = 5000 # U/mL
+    vD_0 = 30 # ng/mL
+    vD = 40 # ng/mL
+    Ppap3 = dicts[mask1]["Ppap"] - 0.0008 * heparin - 0.05 * (vD - vD_0)
+    Ppc3 = dicts[mask1]["Ppc"] - 0.0008 * heparin - 0.05 * (vD - vD_0)
+    t0 = dicts[mask0]["t"].values
+    t1 = dicts[mask1]["t"].values
+    t2 = dicts[mask2]["t"].values
+    Ppap0 = dicts[mask0]["Ppap"]
+    Ppap1 = dicts[mask1]["Ppap"]
+    Ppap2 = dicts[mask2]["Ppap"]
+    Ppc0 = dicts[mask0]["Ppc"]
+    Ppc1 = dicts[mask1]["Ppc"]
+    Ppc2 = dicts[mask2]["Ppc"]
+
+    t = [t0, t1, t2, t1]
+    Ppc = [Ppc0, Ppc1, Ppc2, Ppc3]
+    Ppap = [Ppap0, Ppap1, Ppap2, Ppap3]
+
+    sns.set_style("whitegrid")
+    plt.figure(figsize=[5, 3])
+    for tk, p1, p2 in zip(t, Ppap, Ppc):
+        print()
+        g = sns.scatterplot(x=p1[tk>4], y=p2[tk>4], alpha=0.6)
+    plt.legend(["C+V", "C+V+T", "H", "C+V+3T"], loc='center left', bbox_to_anchor=(1, 0.5))
+    # plt.title(f"{title}")
+    sns.despine(left=True, bottom=True)
+    plt.xlabel("artery [mmHg]")
+    plt.ylabel("capillaries [mmHg]")
+    plt.tight_layout()
+    plt.savefig(f"{plot_dir}/heparin.png")
+    plt.savefig(f"{plot_dir}/heparin.pdf")
+    plt.show()
+    plt.clf()
+    plt.close()
+    gc.collect()
+
+    return dicts
+
+
 def main():
 
     aging = True
@@ -314,13 +370,13 @@ def main():
 
     if aging:
 
-        measures = {
-            "": ["I", "G"],
-        }
-        for title, measure in measures.items():
-            dicts = search_data_aging(out_dir, "DIABETES", measure)
-            make_curve_plot(dicts, measure, plot_dir, title, "insulin [mU/ml]", "glucose [ml/dl]")
-        #
+        # measures = {
+        #     "": ["I", "G"],
+        # }
+        # for title, measure in measures.items():
+        #     dicts = search_data_aging(out_dir, "DIABETES", measure)
+        #     make_curve_plot(dicts, measure, plot_dir, title, "insulin [mU/ml]", "glucose [ml/dl]")
+
         # measures = {
         #     "G": ["", "glucose [ml/dl]"],
         #     # "I": ["", "insulin [ml/dl]"],
@@ -329,17 +385,17 @@ def main():
         #     dicts = search_data_aging(out_dir, "DIABETES", measure)
         #     make_lineplot_diabetes(dicts, measure, plot_dir, title, ylabel, "time [days]")
 
-        # measures = {
-        #     "diacid": ["", "drug diacid [ng/ml]"],
-        #     # "ang17": ["ANG-(1-7)", "concentration [ng/ml]"],
-        #     # "at1r": ["AT1R", "concentration [ng/ml]"],
-        #     # "at2r": ["AT2R", "concentration [ng/ml]"],
-        #     # "ACE2": ["", "ACE2"],
-        #     # "IR": ["", "inflammation"],
-        # }
-        # for measure, (title, ylabel) in measures.items():
-        #     dicts = search_data_aging(out_dir, "DKD", measure)
-        #     make_lineplot_age(dicts, measure, plot_dir, title, ylabel, "time [days]")
+        measures = {
+            "diacid": ["", "drug diacid [ng/ml]"],
+            # "ang17": ["ANG-(1-7)", "concentration [ng/ml]"],
+            # "at1r": ["AT1R", "concentration [ng/ml]"],
+            # "at2r": ["AT2R", "concentration [ng/ml]"],
+            # "ACE2": ["", "ACE2"],
+            "IR": ["", "inflammation"],
+        }
+        for measure, (title, ylabel) in measures.items():
+            dicts = search_data_aging(out_dir, "DKD", measure)
+            make_lineplot_age(dicts, measure, plot_dir, title, ylabel, "time [days]")
 
         # measures = {
         #     "": ["artery", "capillaries", "Ppap", "Ppc"],
@@ -355,6 +411,7 @@ def main():
         # for title, items in measures.items():
         #     x_label, y_label, measure = items[0], items[1], items[2:]
         #     dicts = search_data_aging(out_dir, "CARDIO", measure)
+        #     clotting(dicts, plot_dir)
         #     make_pvplot(dicts, measure, plot_dir, title, f"{x_label} [mmHg]", f"{y_label} [mmHg]")
         #     make_lineplot_age(dicts, measure[0], plot_dir, title, f"{x_label} [mmHg]")
         #     make_lineplot_age(dicts, measure[1], plot_dir, title, f"{y_label} [mmHg]")

@@ -2,7 +2,7 @@ import sys
 
 import numpy as np
 
-import msmodel
+import patient
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
         sys.argv.extend(["--dose", "0"])
         sys.argv.extend(["--renal-function", "normal"])
         sys.argv.extend(["--glu", "5"])
-        msmodel.covid19_dkd_model(model="infection")
+        patient.computational_patient(model="infection")
         sys.argv = [sys.argv[0]]
 
         sys.argv.extend(["--age", str(age)])
@@ -21,7 +21,7 @@ def main():
         sys.argv.extend(["--dose", "0"])
         sys.argv.extend(["--renal-function", "normal"])
         sys.argv.extend(["--glu", "5"])
-        msmodel.covid19_dkd_model(model="infection")
+        patient.computational_patient(model="infection")
         sys.argv = [sys.argv[0]]
 
         sys.argv.extend(["--age", str(age)])
@@ -29,7 +29,7 @@ def main():
         sys.argv.extend(["--dose", "5"])
         sys.argv.extend(["--renal-function", "impaired"])
         sys.argv.extend(["--glu", "17"])
-        msmodel.covid19_dkd_model(model="infection")
+        patient.computational_patient(model="infection")
         sys.argv = [sys.argv[0]]
 
         # sys.argv.extend(["--age", str(age)])
@@ -37,7 +37,7 @@ def main():
         # sys.argv.extend(["--dose", "5"])
         # sys.argv.extend(["--renal-function", "normal"])
         # sys.argv.extend(["--glu", "17"])
-        # msmodel.covid19_dkd_model(model="infection")
+        # msmodel.computational_patient(model="infection")
         # sys.argv = [sys.argv[0]]
 
         sys.argv.extend(["--age", str(age)])
@@ -45,7 +45,7 @@ def main():
         sys.argv.extend(["--dose", "0"])
         sys.argv.extend(["--renal-function", "impaired"])
         sys.argv.extend(["--glu", "17"])
-        msmodel.covid19_dkd_model(model="infection")
+        patient.computational_patient(model="infection")
         sys.argv = [sys.argv[0]]
 
         sys.argv.extend(["--age", str(age)])
@@ -53,7 +53,7 @@ def main():
         sys.argv.extend(["--dose", "5"])
         sys.argv.extend(["--renal-function", "impaired"])
         sys.argv.extend(["--glu", "17"])
-        msmodel.covid19_dkd_model(model="infection")
+        patient.computational_patient(model="infection")
         sys.argv = [sys.argv[0]]
 
         break

@@ -1,9 +1,9 @@
-import msmodel
+import patient
 
 
 def main():
 
-    msmodel.covid19_dkd_model(model="hypertension")
+    patient.computational_patient(model="hypertension")
 
     return
 

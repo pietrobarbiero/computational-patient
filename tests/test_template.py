@@ -3,10 +3,10 @@ import unittest
 
 class TestTemplateObject(unittest.TestCase):
     def test_object(self):
-        import msmodel
+        import patient
 
-        t = msmodel.TemplateObject()
-        self.assertTrue(isinstance(t, msmodel.TemplateObject))
+        t = patient.TemplateObject()
+        self.assertTrue(isinstance(t, patient.TemplateObject))
         return
 
 

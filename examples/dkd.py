@@ -1,15 +1,15 @@
 import sys
 
-import msmodel
+import patient
 
 
 def main():
 
     sys.argv.extend(["--renal-function", "impaired"])
-    msmodel.covid19_dkd_model(model="dkd")
+    patient.computational_patient(model="dkd")
 
     sys.argv.extend(["--renal-function", "normal"])
-    msmodel.covid19_dkd_model(model="dkd")
+    patient.computational_patient(model="dkd")
 
     return
 

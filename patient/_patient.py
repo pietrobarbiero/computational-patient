@@ -13,7 +13,7 @@ from .ode._local_RAS import call_combinedRAS_ACE_PKPD
 from .ode._hypertension import call_hypertension
 
 
-def covid19_dkd_model(model="infection"):
+def computational_patient(model="infection"):
     args = load_configuration()
 
     if model == "diabetes":
